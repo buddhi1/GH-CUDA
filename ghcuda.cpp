@@ -63,6 +63,8 @@ int main(int argc, char* argv[])
 
   // phase 1
   // computeIntersections();  
+  
+  //*************** requires a barrier before starting labling *****************
 
   // // phase 2
   // labelIntersections();

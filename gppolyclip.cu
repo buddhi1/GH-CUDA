@@ -261,10 +261,10 @@ __global__ void intersect(double *polyPX, double *polyPY, double *polyQX,  doubl
     // insertVertex(I_Q, edgeQ);
     // link(I_P, I_Q);
     // printf("innn %f %f\n", I.x, I.y);
-    dev_intersectionsP[id*3]=I.x;
+    dev_intersectionsP[id*3]=I.x;       //consider edge for the intersection array
     dev_intersectionsP[id*3+1]=I.y;
     dev_intersectionsP[id*3+2]=alpha;
-    neighborP[id]=3;
+    neighborP[id]=3;                    //consider I_Q for the neighbor 
 
     dev_intersectionsQ[id*3]=I.x;
     dev_intersectionsQ[id*3+1]=I.y;
@@ -284,10 +284,10 @@ __global__ void intersect(double *polyPX, double *polyPY, double *polyQX,  doubl
     // I_P = new vertex(Q1->p, alpha);
     // insertVertex(I_P, edgeP);
     // link(I_P, Q1);
-    dev_intersectionsQ[id*3]=P1.x;
+    dev_intersectionsQ[id*3]=P1.x;    
     dev_intersectionsQ[id*3+1]=P1.y;
     dev_intersectionsQ[id*3+2]=beta;
-    neighborQ[id]=0;
+    neighborQ[id]=0;  
 
     dev_intersectionsP[id*3]=Q1.x;
     dev_intersectionsP[id*3+1]=Q1.y;
@@ -346,6 +346,82 @@ __global__ void intersect(double *polyPX, double *polyPY, double *polyQX,  doubl
 
 /*
 -----------------------------------------------------------------
+Function to get previous id of a given vertex 
+Runs in GPU
+Called from Device
+polyType 0 is polygon P and 1 if polygon Q if 2 intersection P if 3 intersection Q
+-------------------------------------------------------------------
+*/
+
+__device__ int getPreviousID(int threadID, int polyType, long size){
+  if(polyType == 0) return (size+threadID/size-1)%size;       //polygon P
+  else if(polyType == 1) return (size+threadID%size-1)%size;  //polygon Q
+  else if(polyType == 2) return threadID/size;                //intersectionP
+  else if(polyType == 3) return threadID%size;                //interscetionQ
+}
+
+/*
+-----------------------------------------------------------------
+Function to get next id of a given vertex 
+Runs in GPU
+Called from Device
+polyType 0 is polygon P and 1 if polygon Q
+-------------------------------------------------------------------
+*/
+
+__device__ int getNextID(int threadID, int polyType, long size){
+  if(polyType == 0) return (size+threadID/size+1)%size;
+
+  return (size+threadID%size+1)%size;
+}
+
+/*
+-----------------------------------------------------------------
+Function to get relative position type
+Runs in GPU
+Called from Device
+0 -> LEFT,
+1 -> RIGHT,
+2 -> IS_P_m,
+3 -> IS_P_p
+-------------------------------------------------------------------
+*/
+
+int oracle(int threadID, point* Q, point* P1, point* P2, point* P3) {
+
+  // is Q linked to P1 ?
+  // if (P1->intersection && (P1->neighbour == Q))
+  if(neighbor)
+    return(2);
+
+  // is Q linked to P2 ?
+  // if (P3->intersection && (P3->neighbour == Q))
+  if(neighborP[threadID] ==)
+    return(3);
+
+  // check relative position of Q with respect to chain (P1,P2,P3)
+  double s1 = A(Q, P1, P2);
+  double s2 = A(Q, P2, P3);
+  double s3 = A(P1, P2, P3);
+
+  if (s3 > 0) { 
+    // chain makes a left turn
+    if (s1 > 0 && s2 > 0)
+      return(0);
+    else
+      return(1);
+  }
+  else {
+    // chain makes a right turn (or is straight)
+    if (s1 < 0 && s2 < 0)
+      return(1);
+    else
+      return(0);
+  }
+}
+
+/*
+-----------------------------------------------------------------
 Function to label all instersection points
 Runs in GPU
 Called from Device
@@ -353,7 +429,14 @@ Called from Device
 */
 
 __device__ void labelIntersectionPoints(double *polyPX, double *polyPY, double *polyQX,  double *polyQY, double *dev_intersectionsP, double *dev_intersectionsQ, int *neighborP, int *neighborQ, int sizeP, int sizeQ){
-  int id=threadIdx.x;
+  int threadID=threadIdx.x;
+  // if the current thread does not have an intersection point to label, exit the function
+  if()
+    return;
+
+  // pass type of the current point (P/Q/intersection_p/intersection_Q)
+  int previousID=getPreviousID(threadID, 2, sizeQ);
+  int nextID=getNextID(threadID, 2, sizeQ);
 
   // intersection point related to current thread
   point I;
@@ -361,37 +444,44 @@ __device__ void labelIntersectionPoints(double *polyPX, double *polyPY, double *
   I.y=intersectionsP[id*3+1];
   // determine local configuration at this intersection vertex
   point P_m, P_p, Q_m, Q_p
-  P_m.x = polyPX[id]; //I->prev;                // P-, predecessor of I on P
-  P_m.y = polyPY[id]; //I->prev;                // P-, predecessor of I on P
-  P_p.x = polyPX[id+1]; //I->next;                // P+, successor of I on P
-  P_p.y = polyPY[id+1]; //I->next;                // P+, successor of I on P
+  P_m.x = polyPX[previousID]; //I->prev;                // P-, predecessor of I on P
+  P_m.y = polyPY[previousID]; //I->prev;                // P-, predecessor of I on P
+  P_p.x = polyPX[nextID]; //I->next;                // P+, successor of I on P
+  P_p.y = polyPY[nextID]; //I->next;                // P+, successor of I on P
+  
+  int neighborPreviousID=getPreviousID(threadID, neighborP[threadID], sizeQ);
+  int neighborNextID=getNextID(threadID, neighborP[threadID], sizeQ);
+  // neighbor changes based on the neighbor arrays
   // Q_m.x = polyQX[id]; //I->neighbour->prev;     // Q-, predecessor of I on Q
   // Q_m.y = polyQY[id]; //I->neighbour->prev;     // Q-, predecessor of I on Q
   // Q_p.x = polyQX[id+1]; //I->neighbour->next;     // Q+, successor of I on P
   // Q_p.y = polyQY[id+1]; //I->neighbour->next;     // Q+, successor of I on P
 
-  // check if neghbor is not Q
-  if(neighborP[id] == 0){
-    Q_m.x = polyPX[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_m.y = polyPY[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_p.x = polyPX[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-    Q_p.y = polyPY[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-  } else if(neighborP[id] == 1){
-    Q_m.x = polyQX[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_m.y = polyQY[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_p.x = polyQX[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-    Q_p.y = polyQY[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-  } else if(neighborP[id] == 2){
-    Q_m.x = intersectionsP[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_m.y = intersectionsP[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_p.x = intersectionsP[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-    Q_p.y = intersectionsP[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-  } else if(neighborP[id] == 3){
-    Q_m.x = intersectionsQ[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_m.y = intersectionsQ[id-1]; //I->neighbour->prev;     // Q-, predecessor of I on Q
-    Q_p.x = intersectionsQ[id+1]; //I->neighbour->next;     // Q+, successor of I on P
-    Q_p.y = intersectionsQ[id+1]; //I->neighbour->next;     // Q+, successor of I on P
+  if(neighborP[threadID] == 0){
+    Q_m.x = polyPX[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_m.y = polyPY[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_p.x = polyPX[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+    Q_p.y = polyPY[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+  } else if(neighborP[threadID] == 1){
+    Q_m.x = polyQX[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_m.y = polyQY[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_p.x = polyQX[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+    Q_p.y = polyQY[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+  } else if(neighborP[threadID] == 2){
+    Q_m.x = polyPX[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_m.y = polyPY[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_p.x = polyPX[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+    Q_p.y = polyPY[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+  } else if(neighborP[threadID] == 3){
+    Q_m.x = polyQX[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_m.y = polyQY[neighborPreviousID]; //I->neighbour->prev;     // Q-, predecessor of I on Q
+    Q_p.x = polyQX[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
+    Q_p.y = polyQY[neighborNextID]; //I->neighbour->next;     // Q+, successor of I on P
   }
+
+  // check positions of Q- and Q+ relative to (P-, I, P+)
+  int Q_m_type = oracle(Q_m, P_m, I, P_p);
+  int Q_p_type = oracle(Q_p, P_m, I, P_p);
 
 }
 
