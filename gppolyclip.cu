@@ -396,7 +396,7 @@ int oracle(int threadID, point* Q, point* P1, point* P2, point* P3) {
 
   // is Q linked to P2 ?
   // if (P3->intersection && (P3->neighbour == Q))
-  if(neighborP[threadID] ==)
+  if(neighborP[threadID] == )
     return(3);
 
   // check relative position of Q with respect to chain (P1,P2,P3)
