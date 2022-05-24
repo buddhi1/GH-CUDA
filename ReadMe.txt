@@ -4,7 +4,7 @@ g++ -std=c++11 ghcuda.cpp -o ghcuda
 
 usage:
 
-./ghcuda data/Fig8-P.poly data/Fig8-Q.poly results/Fig8-R.poly
+./program data/Fig8-P.poly data/Fig8-Q.poly results/Fig8-R.poly
 
 ./program data/Fig8-P.poly data/Fig8-Q.poly results/Fig8-R.poly
 

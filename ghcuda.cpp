@@ -59,7 +59,8 @@ int main(int argc, char* argv[])
   // cout << "**my count " << QQ[0].numVertices << endl;
 
   // testhello();
-  calculateIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
+  countIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
+  // calculateIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
 
   // phase 1
   // computeIntersections();  
