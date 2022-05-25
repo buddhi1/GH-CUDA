@@ -186,10 +186,204 @@ __device__ int getIntersectType(const point& P1, const point& P2, const point& Q
   return (0);
 	// return (NO_INTERSECTION); 
 }
+/*
+{
+  // save intersection points in the correct location using prefixsum arrays and make neighbor connection
+  count1=0;
+  count2=0;
+  poly1X=polyPX;
+  poly1Y=polyPY;
+  poly2X=polyQX;
+  poly2Y=polyQY;
+  pid=id;
+  if(id>=sizeP){
+    size=sizeP;
+    poly1X=polyQX; 
+    poly1Y=polyQY; 
+    poly2X=polyPX;
+    poly2Y=polyPY;
+    pid=id-sizeP;
+  }
+
+  for(int qid=0; qid<size; qid++){
+    P1.x = poly1X[pid];
+    P1.y = poly1Y[pid];
+
+    Q1.x = poly2X[qid];
+    Q1.y = poly2Y[qid];
+    Q2.x = poly2X[qid+1];
+    Q2.y = poly2Y[qid+1];
+
+    // reset P2 vertex of last edge to first vertex
+    if(qid == size-1){
+      Q2.x = poly2X[0];
+      Q2.y = poly2Y[0];
+    }
+    //polygon1 is P and polygon2 is Q
+    if(pid==id && pid==sizeP-1){
+      P2.x = poly1X[0];
+      P2.y = poly1Y[0];
+      // printf("sp %d\n", pid);
+    }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
+      P2.x = poly1X[0];
+      P2.y = poly1Y[0];
+      // printf("sp %d\n", pid);
+    } else { //no need reset. Normal case
+      P2.x = poly1X[pid+1];
+      P2.y = poly1Y[pid+1];
+    }
+
+    //
+    // determine intersection or overlap type
+    //
+    // IntersectionType i = intersect(edgeP, edgeQ, alpha, beta);
+    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+    if(i && id<sizeP){
+      // insert parent P1 vertex if no intersections have been inserted
+      if(qid==0){
+        dev_intersectionsP[dev_psP2[pid]+count2*3]=P1.x;       //consider edge for the intersection array
+        dev_intersectionsP[dev_psP2[pid]+count2*3+1]=P1.y;
+        dev_intersectionsP[dev_psP2[pid]+count2*3+2]=-100;     //alpha value define it is a parent, not intersection
+      }
+      switch(i) {
+        //
+        // X-intersection
+        //
+        // case X_INTERSECTION:
+        case 1:
+          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
+          dev_intersectionsP[dev_psP2[pid]+count2*3]=I.x;       //consider edge for the intersection array
+          dev_intersectionsP[dev_psP2[pid]+count2*3+1]=I.y;
+          dev_intersectionsP[dev_psP2[pid]+count2*3+2]=alpha;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+        
+        //
+        // X-overlap
+        //
+        // case X_OVERLAP:
+        case 5:
+          dev_intersectionsP[dev_psP2[pid]+count2*3]=Q1.x;
+          dev_intersectionsP[dev_psP2[pid]+count2*3+1]=Q1.y;
+          dev_intersectionsP[dev_psP2[pid]+count2*3+2]=alpha;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+
+        //
+        // T-intersection or T_overlap on Q
+        //
+        // case T_INTERSECTION_Q:
+        // case T_OVERLAP_Q:
+        // case 2:
+        // case 6:
+
+        //   break;
+
+        //
+        // T-intersection or T-overlap on P
+        //
+        // case T_INTERSECTION_P:
+        // case T_OVERLAP_P:
+        case 3:
+        case 7:
+          dev_intersectionsP[dev_psP2[pid]+count2*3]=Q1.x;
+          dev_intersectionsP[dev_psP2[pid]+count2*3+1]=Q1.y;
+          dev_intersectionsP[dev_psP2[pid]+count2*3+2]=alpha;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+
+        //
+        // V-intersection or V-overlap
+        //
+        // case V_INTERSECTION:
+        // case V_OVERLAP:
+        case 4:
+        case 8:
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+      } 
+      count1++;
+      if(i==1)
+        count2++;
+    } else if(i && id>=sizeP){
+      // insert parent Q1 vertex if no intersections have been inserted
+      if(qid==0){
+        dev_intersectionsQ[dev_psP2[pid]+count2*3]=Q1.x;       //consider edge for the intersection array
+        dev_intersectionsQ[dev_psP2[pid]+count2*3+1]=Q1.y;
+        dev_intersectionsQ[dev_psP2[pid]+count2*3+2]=-100;     //alpha value define it is a parent, not intersection
+      }
+      switch(i) {
+        //
+        // X-intersection
+        //
+        // case X_INTERSECTION:
+        case 1:
+          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
+          dev_intersectionsQ[dev_psP2[pid]+count2*3]=I.x;
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+1]=I.y;
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+2]=beta;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+        
+        //
+        // X-overlap
+        //
+        // case X_OVERLAP:
+        case 5:
+          dev_intersectionsQ[dev_psP2[pid]+count2*3]=P1.x;    
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+1]=P1.y;
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+2]=beta;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+
+        //
+        // T-intersection or T_overlap on Q
+        //
+        // case T_INTERSECTION_Q:
+        // case T_OVERLAP_Q:
+        case 2:
+        case 6:
+          dev_intersectionsQ[dev_psP2[pid]+count2*3]=P1.x;
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+1]=P1.y;
+          dev_intersectionsQ[dev_psP2[pid]+count2*3+2]=beta;   
+          neighborQ[id]=0;
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+
+        //
+        // T-intersection or T-overlap on P
+        //
+        // case T_INTERSECTION_P:
+        // case T_OVERLAP_P:
+        // case 3:
+        // case 7:
+
+        //   break;
+
+        //
+        // V-intersection or V-overlap
+        //
+        // case V_INTERSECTION:
+        // case V_OVERLAP:
+        case 4:
+        case 8:
+          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //neighbor of new vertex
+          break;
+      } 
+    }
+    count1++;
+    if(i==1)
+      count2++;
+  }
+}*/
 
 /*
 -----------------------------------------------------------------
-Function to calculate all intersections
+Function to count all intersections. 
+Return prefix sum arrays.
+  *prefix sum of count of all intersection vertices x2 (P and Q)
+  *prefix sum of count of all intersection vertices excluding 
+   degenerate cases x2 (P and Q)
 Runs in GPU
 Called from Host
 -------------------------------------------------------------------
@@ -270,290 +464,17 @@ __global__ void deviceCountIntersections(double *polyPX, double *polyPY, double 
   thrust::exclusive_scan(thrust::device, dev_psQ1, dev_psQ1 + sizeQ, dev_psQ1);
   thrust::exclusive_scan(thrust::device, dev_psQ2, dev_psQ2 + sizeQ, dev_psQ2);
   printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
-  // __syncthreads();
-  // if(id==0){
-  //   for(int ii=0; ii<sizeP; ++ii){
-  //     printf("%d *%d ", dev_psP1[ii], dev_psP2[ii]);
-  //   }
-  //   printf("\nend\n");
-  //   for(int ii=0; ii<sizeQ; ++ii){
-  //     printf("%d *%d ", dev_psQ1[ii], dev_psQ2[ii]);
-  //   }
-  //   printf("\nend\n");
-  // }
-
-
-  // save intersection points in the correct location using prefixsum arrays and make neighbor connection
-  count1=0;
-  count2=0;
-  poly1X=polyPX;
-  poly1Y=polyPY;
-  poly2X=polyQX;
-  poly2Y=polyQY;
-  pid=id;
-  if(id>=sizeP){
-    size=sizeP;
-    poly1X=polyQX; 
-    poly1Y=polyQY; 
-    poly2X=polyPX;
-    poly2Y=polyPY;
-    pid=id-sizeP;
+  __syncthreads();
+  if(id==0){
+    for(int ii=0; ii<sizeP; ++ii){
+      printf("%d *%d ", dev_psP1[ii], dev_psP2[ii]);
+    }
+    printf("\nend\n");
+    for(int ii=0; ii<sizeQ; ++ii){
+      printf("%d *%d ", dev_psQ1[ii], dev_psQ2[ii]);
+    }
+    printf("\nend\n");
   }
-
-  for(int qid=0; qid<size; qid++){
-    P1.x = poly1X[pid];
-    P1.y = poly1Y[pid];
-
-    Q1.x = poly2X[qid];
-    Q1.y = poly2Y[qid];
-    Q2.x = poly2X[qid+1];
-    Q2.y = poly2Y[qid+1];
-
-    // reset P2 vertex of last edge to first vertex
-    if(qid == size-1){
-      Q2.x = poly2X[0];
-      Q2.y = poly2Y[0];
-    }
-    //polygon1 is P and polygon2 is Q
-    if(pid==id && pid==sizeP-1){
-      P2.x = poly1X[0];
-      P2.y = poly1Y[0];
-      // printf("sp %d\n", pid);
-    }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
-      P2.x = poly1X[0];
-      P2.y = poly1Y[0];
-      // printf("sp %d\n", pid);
-    } else { //no need reset. Normal case
-      P2.x = poly1X[pid+1];
-      P2.y = poly1Y[pid+1];
-    }
-
-    //
-    // determine intersection or overlap type
-    //
-    // IntersectionType i = intersect(edgeP, edgeQ, alpha, beta);
-    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-    if(i && id<sizeP){
-      switch(i) {
-        //
-        // X-intersection
-        //
-        // case X_INTERSECTION:
-        case 1:
-          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          dev_intersectionsP[dev_psP2[pid]+count2*3]=I.x;       //consider edge for the intersection array
-          dev_intersectionsP[dev_psP2[pid]+count2*3+1]=I.y;
-          dev_intersectionsP[dev_psP2[pid]+count2*3+2]=alpha;
-          neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //consider I_Q for the neighbor 
-          break;
-        
-        //
-        // X-overlap
-        //
-        // case X_OVERLAP:
-        case 5:
-          dev_intersectionsP[id*3]=Q1.x;
-          dev_intersectionsP[id*3+1]=Q1.y;
-          dev_intersectionsP[id*3+2]=alpha;
-          neighborP[id]=1;
-          break;
-
-        //
-        // T-intersection or T_overlap on Q
-        //
-        // case T_INTERSECTION_Q:
-        // case T_OVERLAP_Q:
-        case 2:
-        case 6:
-
-          break;
-
-        //
-        // T-intersection or T-overlap on P
-        //
-        // case T_INTERSECTION_P:
-        // case T_OVERLAP_P:
-        case 3:
-        case 7:
-          dev_intersectionsP[id*3]=Q1.x;
-          dev_intersectionsP[id*3+1]=Q1.y;
-          dev_intersectionsP[id*3+2]=alpha;
-          neighborP[id]=1;
-          break;
-
-        //
-        // V-intersection or V-overlap
-        //
-        // case V_INTERSECTION:
-        // case V_OVERLAP:
-        case 4:
-        case 8:
-          neighborP[id]=1;
-          break;
-      } 
-      count1++;
-      if(i==1)
-        count2++;
-    } else if(i && id>=sizeP){
-      switch(i) {
-        //
-        // X-intersection
-        //
-        // case X_INTERSECTION:
-        case 1:
-          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          dev_intersectionsQ[id*3]=I.x;
-          dev_intersectionsQ[id*3+1]=I.y;
-          dev_intersectionsQ[id*3+2]=beta;
-          neighborQ[id]=2;
-          break;
-        
-        //
-        // X-overlap
-        //
-        // case X_OVERLAP:
-        case 5:
-          dev_intersectionsQ[id*3]=P1.x;    
-          dev_intersectionsQ[id*3+1]=P1.y;
-          dev_intersectionsQ[id*3+2]=beta;
-          neighborQ[id]=0;  
-          break;
-
-        //
-        // T-intersection or T_overlap on Q
-        //
-        // case T_INTERSECTION_Q:
-        // case T_OVERLAP_Q:
-        case 2:
-        case 6:
-          dev_intersectionsQ[id*3]=P1.x;
-          dev_intersectionsQ[id*3+1]=P1.y;
-          dev_intersectionsQ[id*3+2]=beta;   
-          neighborQ[id]=0;
-          break;
-
-        //
-        // T-intersection or T-overlap on P
-        //
-        // case T_INTERSECTION_P:
-        // case T_OVERLAP_P:
-        case 3:
-        case 7:
-
-          break;
-
-        //
-        // V-intersection or V-overlap
-        //
-        // case V_INTERSECTION:
-        // case V_OVERLAP:
-        case 4:
-        case 8:
-          neighborQ[id]=0;
-          break;
-      } 
-    }
-    count1++;
-    if(i==1)
-      count2++;
-  }
-
-
-/*
-  switch(i) {
-  //
-  // X-intersection
-  //
-  // case X_INTERSECTION:
-  case 1:
-    // I = (1.0-alpha)*edgeP.one->p + alpha*edgeP.two->p;
-    I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-    // I_P = new vertex(I,alpha);
-    // I_Q = new vertex(I,beta);
-    // insertVertex(I_P, edgeP);
-    // insertVertex(I_Q, edgeQ);
-    // link(I_P, I_Q);
-    // printf("innn %f %f\n", I.x, I.y);
-    dev_intersectionsP[dev_psP2[pid]+count2*3]=I.x;       //consider edge for the intersection array
-    dev_intersectionsP[dev_psP2[pid]+count2*3+1]=I.y;
-    dev_intersectionsP[dev_psP2[pid]+count2*3+2]=alpha;
-    neighborP[dev_psP1[pid]+count1]=dev_psP2[pid]+count2;                    //consider I_Q for the neighbor 
-
-    dev_intersectionsQ[id*3]=I.x;
-    dev_intersectionsQ[id*3+1]=I.y;
-    dev_intersectionsQ[id*3+2]=beta;
-    neighborQ[id]=2;
-    break;
-  
-  //
-  // X-overlap
-  //
-  // case X_OVERLAP:
-  case 5:
-    // I_Q = new vertex(P1->p, beta);
-    // insertVertex(I_Q, edgeQ);
-    // link(P1, I_Q);
-
-    // I_P = new vertex(Q1->p, alpha);
-    // insertVertex(I_P, edgeP);
-    // link(I_P, Q1);
-    dev_intersectionsQ[id*3]=P1.x;    
-    dev_intersectionsQ[id*3+1]=P1.y;
-    dev_intersectionsQ[id*3+2]=beta;
-    neighborQ[id]=0;  
-
-    dev_intersectionsP[id*3]=Q1.x;
-    dev_intersectionsP[id*3+1]=Q1.y;
-    dev_intersectionsP[id*3+2]=alpha;
-    neighborP[id]=1;
-    break;
-
-  //
-  // T-intersection or T_overlap on Q
-  //
-  // case T_INTERSECTION_Q:
-  // case T_OVERLAP_Q:
-  case 2:
-  case 6:
-    // I_Q = new vertex(P1->p, beta);
-    // insertVertex(I_Q, edgeQ);
-    // link(P1, I_Q);
-
-    dev_intersectionsQ[id*3]=P1.x;
-    dev_intersectionsQ[id*3+1]=P1.y;
-    dev_intersectionsQ[id*3+2]=beta;   
-    neighborQ[id]=0;
-    break;
-
-  //
-  // T-intersection or T-overlap on P
-  //
-  // case T_INTERSECTION_P:
-  // case T_OVERLAP_P:
-  case 3:
-  case 7:
-    // I_P = new vertex(Q1->p, alpha);
-    // insertVertex(I_P, edgeP);
-    // link(I_P, Q1);
-
-    dev_intersectionsP[id*3]=Q1.x;
-    dev_intersectionsP[id*3+1]=Q1.y;
-    dev_intersectionsP[id*3+2]=alpha;
-    neighborP[id]=1;
-    break;
-
-  //
-  // V-intersection or V-overlap
-  //
-  // case V_INTERSECTION:
-  // case V_OVERLAP:
-  case 4:
-  case 8:
-    // link(P1,Q1);
-    neighborP[id]=1;
-    neighborQ[id]=0;
-    break;
-  } */
 }
 
 /*
@@ -892,6 +813,11 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   cudaMemcpy(&psQ1, dev_psQ1, sizeQ*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ2, dev_psQ2, sizeQ*sizeof(int), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
+
+  for (int i = 0; i < sizeP; ++i)
+  {
+    printf("* %d ", psP1[i]);
+  }
 
   cudaFree(dev_polyPX);
   cudaFree(dev_polyPY);
