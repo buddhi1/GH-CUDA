@@ -2,3 +2,4 @@ makefile
 program
 *.o
 ~$notes.docx
+.vscode
