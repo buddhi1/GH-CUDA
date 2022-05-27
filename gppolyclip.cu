@@ -187,7 +187,7 @@ Called from Device
 3 -> IS_P_p
 -------------------------------------------------------------------
 */
-__device__ int oracle(int pMNId, int pPNId, int qId, point Q, point P1, point P2, point P3) {
+__device__ int oracle(int pMNId, int pPNId, int qId, const point& Q, const point& P1, const point& P2, const point& P3) {
   // is Q linked to P1 ?
   if(pMNId!=-100 && pMNId==qId) return 2;
   // is Q linked to P2 ?
@@ -333,7 +333,7 @@ __global__ void deviceCountIntersections(double *polyPX, double *polyPY, double 
   thrust::exclusive_scan(thrust::device, psP2, psP2 + sizeP+1, psP2);
   thrust::exclusive_scan(thrust::device, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
   thrust::exclusive_scan(thrust::device, psQ2, psQ2 + sizeQ+1, psQ2);
-  printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
+  // printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
   // __syncthreads();
   // if(id==0){
   //   for(int ii=0; ii<sizeP; ++ii){
@@ -479,6 +479,7 @@ __global__ void deviceCalculateIntersections(double *polyPX, double *polyPY, dou
           break;
       } 
     } else if(i && id>=sizeP){
+      initLabelsQ[(psQ2[pid]+count2)]=-100;    //make init label to default -100 
       count1++;
         if(i==1 || i==3 || i==5 || i==7)
         // if(i==1 || i==2 || i==5 || i==6)
@@ -547,13 +548,13 @@ __global__ void deviceCalculateIntersections(double *polyPX, double *polyPY, dou
   int start=psP2[pid], end=psP2[pid+1];
   int tmpId, nId, pMNId, pPNId;
   point pM, pP, qM, qP, current;
-  int qMType, qPType;
+  int qMType, qPType, tmpIniLabel;
 
   for (int i = start; i < end; i++){
-    // initLabelsP[i]=-100;
+    initLabelsP[i]=-100;
     if(intersectionsP[i*3+2]!=-100){    //consider intersections only
-      current.x=intersectionsP[tmpId*3]; 
-      current.y=intersectionsP[tmpId*3+1]; 
+      current.x=intersectionsP[i*3]; 
+      current.y=intersectionsP[i*3+1]; 
       tmpId=getCircularId(i-1, sizeNP);
       // determine local configuration at this intersection vertex
       pM.x=intersectionsP[tmpId*3];                // P-, predecessor of I on P
@@ -580,10 +581,11 @@ __global__ void deviceCalculateIntersections(double *polyPX, double *polyPY, dou
       qP.y=intersectionsQ[tmpId*3+1];     // Q+, successor of I on P
       qPType=oracle(pMNId, pPNId, tmpId, qP, pM, current, pP);
 
+      tmpIniLabel=getInitialLabel(qMType, qPType);
+      initLabelsP[i]=tmpIniLabel;
+      initLabelsQ[nId]=tmpIniLabel;
       // printf("%d %d (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n", i, nId, pM.x, pM.y, pP.x, pP.y, qM.x, qM.y, qP.x, qP.y);
-      // initLabelsP[i]=getInitialLabel(qMType, qPType);
       // printf(">>> %d %d %d %d\n", i, qMType, qPType, getInitialLabel(qMType, qPType));
-      printf(">>> %d %d %d\n", i, qMType, qPType);
     }
   }
 }
@@ -866,17 +868,17 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   cudaMemcpy(&psQ1, dev_psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ2, dev_psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
 
-  for (int i = 0; i < sizeQ+1; ++i)
-  {
-    printf(" %d ", psQ2[i]);
-  }
-  printf("--- \n");
+  // for (int i = 0; i < sizeQ+1; ++i)
+  // {
+  //   printf(" %d ", psQ2[i]);
+  // }
+  // printf("--- \n");
 
-  for (int i = 0; i < sizeQ+1; ++i)
-  {
-    printf(" %d ", psQ1[i]);
-  }
-  printf("--- \n");
+  // for (int i = 0; i < sizeQ+1; ++i)
+  // {
+  //   printf(" %d ", psQ1[i]);
+  // }
+  // printf("--- \n");
   // Phase 2: Calcualte intersections and save them in the arrays. Make neighbor connections
   // int countIntersections=psP1[sizeP-1];
   // int countNonDegenIntP=psP2[sizeP-1]+(psP1[sizeP-1]-psP1[sizeP-2])+1;
@@ -885,7 +887,7 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   int countIntersections=psP1[sizeP];
   int countNonDegenIntP=psP2[sizeP];
   int countNonDegenIntQ=psQ2[sizeQ];
-  printf("non degen size %d %d\n", countNonDegenIntP, countNonDegenIntQ);
+  // printf("non degen size %d %d\n", countNonDegenIntP, countNonDegenIntQ);
   double intersectionsP[countNonDegenIntP*3], intersectionsQ[countNonDegenIntQ*3];
   int neighborP[countIntersections], neighborQ[countIntersections], neighborMapP[countNonDegenIntP], neighborMapQ[countNonDegenIntQ], initLabelsP[countNonDegenIntP], initLabelsQ[countNonDegenIntQ];
   double *dev_intersectionsP, *dev_intersectionsQ;
@@ -914,51 +916,51 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
 
   cudaDeviceSynchronize();
 
-  printf("intersectionP");
-  for (int i = 0; i < countNonDegenIntP*3; ++i)
-  {
-    if(i%3==0)
-      printf("\n%d", i/3);
-    printf(" %f ", intersectionsP[i]);
-  }
-  printf("\n\nintersectionQ");
-  for (int i = 0; i < countNonDegenIntQ*3; ++i)
-  {
-    if(i%3==0)
-      printf("\n%d", i/3);
-    printf(" %f ", intersectionsQ[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countIntersections; ++i)
-  {
-    printf(" %d ", neighborP[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countIntersections; ++i)
-  {
-    printf(" %d ", neighborQ[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntP; ++i)
-  {
-    printf(" %d-%d ", i, neighborMapP[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntQ; ++i)
-  {
-    printf(" %d-%d ", i, neighborMapQ[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntP; ++i)
-  {
-    printf(" %d>%d ", i, initLabelsP[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntQ; ++i)
-  {
-    printf(" %d>%d ", i, initLabelsQ[i]);
-  }
-  printf("\n");
+  // printf("intersectionP");
+  // for (int i = 0; i < countNonDegenIntP*3; ++i)
+  // {
+  //   if(i%3==0)
+  //     printf("\n%d", i/3);
+  //   printf(" %f ", intersectionsP[i]);
+  // }
+  // printf("\n\nintersectionQ");
+  // for (int i = 0; i < countNonDegenIntQ*3; ++i)
+  // {
+  //   if(i%3==0)
+  //     printf("\n%d", i/3);
+  //   printf(" %f ", intersectionsQ[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countIntersections; ++i)
+  // {
+  //   printf(" %d ", neighborP[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countIntersections; ++i)
+  // {
+  //   printf(" %d ", neighborQ[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countNonDegenIntP; ++i)
+  // {
+  //   printf(" %d-%d ", i, neighborMapP[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countNonDegenIntQ; ++i)
+  // {
+  //   printf(" %d-%d ", i, neighborMapQ[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countNonDegenIntP; ++i)
+  // {
+  //   printf(" %d>%d ", i, initLabelsP[i]);
+  // }
+  // printf("\n");
+  // for (int i = 0; i < countNonDegenIntQ; ++i)
+  // {
+  //   printf(" %d>%d ", i, initLabelsQ[i]);
+  // }
+  // printf("\n");
 
 
 
