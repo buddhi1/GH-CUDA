@@ -3,3 +3,4 @@ program
 *.o
 ~$notes.docx
 .vscode
+results

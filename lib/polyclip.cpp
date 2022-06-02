@@ -335,7 +335,7 @@ void labelIntersections() {
   //
 
   int count[2] = {0,0};
-
+  /*
   // loop over intersection vertices of P
   for (polygon& P : PP) 
     for (vertex* I : P.vertices(INTERSECTION)) {
@@ -389,7 +389,7 @@ void labelIntersections() {
   	}
 
   cout << "... " << count[0] << " crossing and " << count[1] << " bouncing intersection vertices" << endl;
-
+  */
 	//
 	// 2) classify intersection chains
 	//

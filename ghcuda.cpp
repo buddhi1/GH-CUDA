@@ -59,8 +59,106 @@ int main(int argc, char* argv[])
   // cout << "**my count " << QQ[0].numVertices << endl;
 
   // testhello();
-  countIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
+  double *intersectionsP, *intersectionsQ;
+  int countNonDegenIntP, countNonDegenIntQ, *initLabelsP, *initLabelsQ;
+  vertex *tmpVertex, *current;
+  countIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices, &countNonDegenIntP, &countNonDegenIntQ, &intersectionsP, &intersectionsQ, &initLabelsP, &initLabelsQ);
   // calculateIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
+  
+  // Polygon P: (PP)insert intersection vertices and change alpha value in the degenerate cases
+  i=0;
+  cout << "&& " << PP[0].root->next->p.x << "," << PP[0].root->prev->p.y << endl;
+  // for (vertex* V : PP[0].vertices(ALL)){
+  vertex* V=PP[0].root;
+  do{
+    current=V;
+    while(*(intersectionsP+i)!=V->p.x || *(intersectionsP+i+1)!=V->p.y){
+      tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
+      tmpVertex->alpha=*(intersectionsP+i+2);
+      tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+      tmpVertex->next=current;
+      current->prev->next=tmpVertex;
+      tmpVertex->prev=current->prev;
+      current->prev=tmpVertex;
+      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
+      i+=3;
+    }
+    V->alpha=*(intersectionsP+i+2);
+    V->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+    i+=3;
+    V=current->next;
+  }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
+
+  current=current->next;
+  for(; i<countNonDegenIntP*3; i+=3){
+    tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
+    tmpVertex->alpha=*(intersectionsP+i+2);
+    tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+    tmpVertex->next=current;
+    current->prev->next=tmpVertex;
+    tmpVertex->prev=current->prev;
+    current->prev=tmpVertex;
+    cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+  }
+
+// Polygon Q: (QQ)insert intersection vertices and change alpha value in the degenerate cases
+  i=0;
+  cout << "&&&& " << QQ[0].root->next->p.x << "," << QQ[0].root->prev->p.y << endl;
+  V=QQ[0].root;
+  do{
+    current=V;
+    while(*(intersectionsQ+i)!=V->p.x || *(intersectionsQ+i+1)!=V->p.y){
+      tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
+      tmpVertex->alpha=*(intersectionsQ+i+2);
+      tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+      tmpVertex->next=current;
+      current->prev->next=tmpVertex;
+      tmpVertex->prev=current->prev;
+      current->prev=tmpVertex;
+      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
+      i+=3;
+    }
+    V->alpha=*(intersectionsQ+i+2);
+    V->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+    i+=3;
+    V=current->next;
+  }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
+
+  current=current->next;
+  for(; i<countNonDegenIntQ*3; i+=3){
+    tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
+    tmpVertex->alpha=*(intersectionsQ+i+2);
+    tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+    tmpVertex->next=current;
+    current->prev->next=tmpVertex;
+    tmpVertex->prev=current->prev;
+    current->prev=tmpVertex;
+    cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+  }
+  
+  cout << "\ncount degen " << countNonDegenIntP << endl;
+  for(i=0; i<countNonDegenIntP*3; ++i){
+      if(i%3==0)
+        cout << "\n" << i/3;
+    cout << " " << *(intersectionsP+i) << " ";
+  }
+  cout << "\nprint from PP" << endl;
+  for (vertex* V : PP[0].vertices(ALL)){
+    cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << endl;
+  }
+
+  cout << "\ncount degen " << countNonDegenIntQ << endl;
+  for(i=0; i<countNonDegenIntQ*3; ++i){
+    if(i%3==0)
+      cout << "\n" << i/3;
+    cout << " " << *(intersectionsQ+i) << " ";
+  }
+  cout << "\nprint from QQ" << endl;
+  for (vertex* V : QQ[0].vertices(ALL)){
+    cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << endl;
+  }
 
   // phase 1
   // computeIntersections();  
@@ -68,14 +166,14 @@ int main(int argc, char* argv[])
   //*************** requires a barrier before starting labling *****************
 
   // // phase 2
-  // labelIntersections();
+  labelIntersections();
 
   // // phase 3
-  // createResult();
+  createResult();
   
   // // post-processing
-  // cleanUpResult();
+  cleanUpResult();
   
   // // write output polygon
-  // cout << "R "; savePolygon(RR,string(argv[argn]));
+  cout << "R "; savePolygon(RR,string(argv[argn]));
 }
