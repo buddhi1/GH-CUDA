@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
   // Polygon P: (PP)insert intersection vertices and change alpha value in the degenerate cases
   i=0;
-  cout << "&& " << PP[0].root->next->p.x << "," << PP[0].root->prev->p.y << endl;
+  // cout << "&& " << PP[0].root->next->p.x << "," << PP[0].root->prev->p.y << endl;
   // for (vertex* V : PP[0].vertices(ALL)){
   vertex* V=PP[0].root;
   do{
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
+      // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
       i+=3;
     }
     V->alpha=*(intersectionsP+i+2);
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
     if(*(intersectionsP+i+2)!=-100){
       V->intersection=true;
     }
-    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+    // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=3;
     V=current->next;
   }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
@@ -114,12 +114,12 @@ int main(int argc, char* argv[])
     current->prev->next=tmpVertex;
     tmpVertex->prev=current->prev;
     current->prev=tmpVertex;
-    cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+    // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
   }
 
 // Polygon Q: (QQ)insert intersection vertices and change alpha value in the degenerate cases
   i=0;
-  cout << "&&&& " << QQ[0].root->next->p.x << "," << QQ[0].root->prev->p.y << endl;
+  // cout << "&&&& " << QQ[0].root->next->p.x << "," << QQ[0].root->prev->p.y << endl;
   V=QQ[0].root;
   do{
     current=V;
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
+      // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
       i+=3;
     }
     V->alpha=*(intersectionsQ+i+2);
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
     if(*(intersectionsQ+i+2)!=-100){ 
       V->intersection=true;
     }
-    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+    // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=3;
     V=current->next;
   }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
@@ -157,25 +157,25 @@ int main(int argc, char* argv[])
     current->prev->next=tmpVertex;
     tmpVertex->prev=current->prev;
     current->prev=tmpVertex;
-    cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+    // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
   }
 
   // linking polygon P and Polygon Q with neighbor property
   // ******RULE: Each vertex will only have ONE NEIGHBOR
-  cout << "\n\n-----------\n";
+  // cout << "\n\n-----------\n";
   V=PP[0].root;
   vertex *VQ=QQ[0].root;
   int j=0;
   i=0;
   do{
-    cout << "== " << i << " " << j << endl;
+    // cout << "== " << i << " " << j << endl;
     if(*(neighborMapP+i)!=-100){
       do{
-        cout << "=========== " << i << " " << j << " "<< *(neighborMapP+i) << endl;
+        // cout << "=========== " << i << " " << j << " "<< *(neighborMapP+i) << endl;
         if(*(neighborQ+*(neighborMapP+i))==j){
           V->neighbour=VQ;
           VQ->neighbour=V;
-          cout << "===***** " << i << " " << j << endl;
+          // cout << "===***** " << i << " " << j << endl;
           break;
         }
         VQ=VQ->next;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
     V=V->next;
     ++i;
   }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
-  cout << "\n-----------\n";
+  // cout << "\n-----------\n";
   
   cout << "\ncount degen " << countNonDegenIntP << endl;
   for(i=0; i<countNonDegenIntP*3; ++i){

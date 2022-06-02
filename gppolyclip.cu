@@ -589,11 +589,9 @@ __global__ void calculateInitLabel(
                 double *intersectionsP, double *intersectionsQ,
                 int *neighborQ, int *neighborMapP,
                 int sizeNP, int sizeNQ, int *initLabelsP, int *initLabelsQ){
-
   int id=blockDim.x*blockIdx.x+threadIdx.x;
   int pid=id;
   if(id>=sizeP) return;
-  printf("itnit lbl id %d\n", id);
   int start=psP2[pid], end=psP2[pid+1];
   // int start=psP2[id], end=psP2[id+1];
   int tmpId, nId, pMNId, pPNId;
@@ -926,7 +924,7 @@ void countIntersections(
   cudaMemcpy(dev_polyQX, polyQX, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_polyQY, polyQY, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
 
-  int threadsPerBlock = 5;
+  int threadsPerBlock = 2;
   int blocksPerGrid = (2*(sizeP+sizeQ) + threadsPerBlock - 1) / threadsPerBlock;
   dim3 dimBlock(threadsPerBlock, 1, 1), dimGrid(blocksPerGrid, 1, 1); 
   printf("blockDim %d gridDim %d\n", dimBlock.x, dimGrid.x);
@@ -1006,7 +1004,7 @@ void countIntersections(
         dev_neighborP, dev_neighborQ, dev_neighborMapP, dev_neighborMapQ, 
         dev_initLabelsQ);
 
-  cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
   // cudaMemcpy(*intersectionsP, dev_intersectionsP, *countNonDegenIntP*3*sizeof(double), cudaMemcpyDeviceToHost);
   // cudaMemcpy(*intersectionsQ, dev_intersectionsQ, *countNonDegenIntQ*3*sizeof(double), cudaMemcpyDeviceToHost);
   // cudaMemcpy(*neighborP, dev_neighborP, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
@@ -1016,7 +1014,7 @@ void countIntersections(
 
   cudaMalloc((void **) &dev_initLabelsP, *countNonDegenIntP*sizeof(int));
 
-  cudaMemcpy(dev_initLabelsQ, *initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyHostToDevice);
+  // cudaMemcpy(dev_initLabelsQ, *initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyHostToDevice);
 
 
   calculateInitLabel<<<dimGrid, dimBlock>>>(
@@ -1037,7 +1035,7 @@ void countIntersections(
   
   cudaDeviceSynchronize();
 
-  printf("intersectionP");
+  /*printf("intersectionP");
   for (int i = 0; i < *countNonDegenIntP*3; ++i)
   {
     if(i%3==0)

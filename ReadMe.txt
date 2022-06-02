@@ -1,20 +1,17 @@
 compile:
 
-g++ -std=c++11 ghcuda.cpp -o ghcuda
+make
+
+for a fresh make
+make clean
+make
 
 usage:
 
 ./program data/Fig8-P.poly data/Fig8-Q.poly results/Fig8-R.poly
-
-./program data/Fig8-P.poly data/Fig8-Q.poly results/Fig8-R.poly
-
-./polyclip ../examples/Fig8-P.poly ../examples/Fig8-Q.poly Fig8-R.poly
-./polyclip ../examples/Fig14-P.poly ../examples/Fig14-Q.poly Fig14-R.poly
-./polyclip ../examples/Fig15-P.poly ../examples/Fig15-Q.poly Fig15-R.poly
-./polyclip ../examples/Fig16-P.poly ../examples/Fig16-Q.poly Fig16-R.poly
-./polyclip ../examples/Fig17-P.poly ../examples/Fig17-Q.poly Fig17-R.poly
-./polyclip ../examples/Fig18-P.poly ../examples/Fig18-Q.poly Fig18-R.poly
-./polyclip ../examples/Fig19-P.poly ../examples/Fig19-Q.poly Fig19-R.poly
+./program data/Fig14-P.poly data/Fig14-Q.poly results/Fig14-R.poly
+./program data/Fig15-P.poly data/Fig15-Q.poly results/Fig15-R.poly
+./program data/Fig16-P.poly data/Fig16-Q.poly results/Fig16-R.poly
 
 
 polyclip [-union] input1.poly input2.poly output.poly
