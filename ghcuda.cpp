@@ -60,11 +60,19 @@ int main(int argc, char* argv[])
 
   // testhello();
   double *intersectionsP, *intersectionsQ;
-  int countNonDegenIntP, countNonDegenIntQ, *initLabelsP, *initLabelsQ;
+  int countNonDegenIntP, countNonDegenIntQ, *initLabelsP, *initLabelsQ, *neighborP, *neighborQ, *neighborMapP, *neighborMapQ;
   vertex *tmpVertex, *current;
-  countIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices, &countNonDegenIntP, &countNonDegenIntQ, &intersectionsP, &intersectionsQ, &initLabelsP, &initLabelsQ);
+  countIntersections(
+      polyPX, polyPY, 
+      polyQX, polyQY, 
+      PP[0].numVertices, QQ[0].numVertices, 
+      &countNonDegenIntP, &countNonDegenIntQ, 
+      &intersectionsP, &intersectionsQ, 
+      &initLabelsP, &initLabelsQ, 
+      &neighborMapP, &neighborMapQ, &neighborP, &neighborQ);
   // calculateIntersections(polyPX, polyPY, polyQX, polyQY, PP[0].numVertices, QQ[0].numVertices);
-  
+  // return 0;
+
   // Polygon P: (PP)insert intersection vertices and change alpha value in the degenerate cases
   i=0;
   cout << "&& " << PP[0].root->next->p.x << "," << PP[0].root->prev->p.y << endl;
@@ -76,6 +84,8 @@ int main(int argc, char* argv[])
       tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
       tmpVertex->alpha=*(intersectionsP+i+2);
       tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+      tmpVertex->source=false;
+      tmpVertex->intersection=true;
       tmpVertex->next=current;
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
@@ -85,6 +95,9 @@ int main(int argc, char* argv[])
     }
     V->alpha=*(intersectionsP+i+2);
     V->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+    if(*(intersectionsP+i+2)!=-100){
+      V->intersection=true;
+    }
     cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=3;
     V=current->next;
@@ -95,6 +108,8 @@ int main(int argc, char* argv[])
     tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
     tmpVertex->alpha=*(intersectionsP+i+2);
     tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/3)));
+    tmpVertex->source=false;
+    tmpVertex->intersection=true;
     tmpVertex->next=current;
     current->prev->next=tmpVertex;
     tmpVertex->prev=current->prev;
@@ -112,6 +127,8 @@ int main(int argc, char* argv[])
       tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
       tmpVertex->alpha=*(intersectionsQ+i+2);
       tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+      tmpVertex->source=false;
+      tmpVertex->intersection=true;
       tmpVertex->next=current;
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
@@ -121,6 +138,9 @@ int main(int argc, char* argv[])
     }
     V->alpha=*(intersectionsQ+i+2);
     V->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+    if(*(intersectionsQ+i+2)!=-100){ 
+      V->intersection=true;
+    }
     cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=3;
     V=current->next;
@@ -131,12 +151,41 @@ int main(int argc, char* argv[])
     tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
     tmpVertex->alpha=*(intersectionsQ+i+2);
     tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/3)));
+    tmpVertex->source=false;
+    tmpVertex->intersection=true;
     tmpVertex->next=current;
     current->prev->next=tmpVertex;
     tmpVertex->prev=current->prev;
     current->prev=tmpVertex;
     cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
   }
+
+  // linking polygon P and Polygon Q with neighbor property
+  // ******RULE: Each vertex will only have ONE NEIGHBOR
+  cout << "\n\n-----------\n";
+  V=PP[0].root;
+  vertex *VQ=QQ[0].root;
+  int j=0;
+  i=0;
+  do{
+    cout << "== " << i << " " << j << endl;
+    if(*(neighborMapP+i)!=-100){
+      do{
+        cout << "=========== " << i << " " << j << " "<< *(neighborMapP+i) << endl;
+        if(*(neighborQ+*(neighborMapP+i))==j){
+          V->neighbour=VQ;
+          VQ->neighbour=V;
+          cout << "===***** " << i << " " << j << endl;
+          break;
+        }
+        VQ=VQ->next;
+        ++j;
+      }while(VQ->p.x!=QQ[0].root->p.x || VQ->p.y!=QQ[0].root->p.y);
+    }
+    V=V->next;
+    ++i;
+  }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
+  cout << "\n-----------\n";
   
   cout << "\ncount degen " << countNonDegenIntP << endl;
   for(i=0; i<countNonDegenIntP*3; ++i){
@@ -146,7 +195,10 @@ int main(int argc, char* argv[])
   }
   cout << "\nprint from PP" << endl;
   for (vertex* V : PP[0].vertices(ALL)){
-    cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << endl;
+    if(V->intersection)
+      cout << V->p.x << ", " << V->p.y << " " << V->alpha << " **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+    else
+      cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << endl;
   }
 
   cout << "\ncount degen " << countNonDegenIntQ << endl;
@@ -157,7 +209,10 @@ int main(int argc, char* argv[])
   }
   cout << "\nprint from QQ" << endl;
   for (vertex* V : QQ[0].vertices(ALL)){
-    cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << endl;
+    if(V->intersection)
+      cout << V->p.x << ", " << V->p.y << " " << V->alpha << " **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+    else
+      cout << V->p.x << ", " << V->p.y << " " << V->alpha << " " << V->label << " " << V->intersection << endl;
   }
 
   // phase 1

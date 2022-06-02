@@ -10,6 +10,8 @@ typedef struct
   double x, y;
 } point;
 
+// test how atomic counter wros to synch all blocks
+// __device__ int blockCounter=0;
 // compute twice the signed area of the triange [P,Q,R]
 __device__ double A(const point& P, const point& Q, const point& R) {
 	return (Q.x-P.x) * (R.y-P.y) - (Q.y-P.y) * (R.x-P.x);
@@ -270,8 +272,12 @@ Runs in GPU
 Called from Host
 -------------------------------------------------------------------
 */
-__global__ void deviceCountIntersections(double *polyPX, double *polyPY, double *polyQX,  double *polyQY, int sizeP, int sizeQ, int *psP1, int *psP2, int *psQ1, int *psQ2){
-  int id=blockIdx.x+threadIdx.x;
+__global__ void deviceCountIntersections(
+                  double *polyPX, double *polyPY, 
+                  double *polyQX,  double *polyQY, 
+                  int sizeP, int sizeQ, 
+                  int *psP1, int *psP2, int *psQ1, int *psQ2){
+  int id=blockDim.x*blockIdx.x+threadIdx.x;
   double alpha;
   double beta;
   point I;
@@ -279,7 +285,6 @@ __global__ void deviceCountIntersections(double *polyPX, double *polyPY, double 
   double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
 
   if(id>=sizeP+sizeQ) return;
-
   point P1, P2, Q1, Q2;
   int pid=id;
   if(id>=sizeP){
@@ -341,20 +346,24 @@ __global__ void deviceCountIntersections(double *polyPX, double *polyPY, double 
     psQ1[pid]=count1;
     psQ2[pid]=count2;
   }
-  __syncthreads();
-  thrust::exclusive_scan(thrust::device, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
-  thrust::exclusive_scan(thrust::device, psP2, psP2 + sizeP+1, psP2);
-  thrust::exclusive_scan(thrust::device, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
-  thrust::exclusive_scan(thrust::device, psQ2, psQ2 + sizeQ+1, psQ2);
+
+  // __syncthreads();
+  // thrust::exclusive_scan(thrust::device, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
+  // thrust::exclusive_scan(thrust::device, psP2, psP2 + sizeP+1, psP2);
+  // thrust::exclusive_scan(thrust::device, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
+  // thrust::exclusive_scan(thrust::device, psQ2, psQ2 + sizeQ+1, psQ2);
   // printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
   // __syncthreads();
   // if(id==0){
+  //   printf("%d \n", sizeP);
   //   for(int ii=0; ii<sizeP; ++ii){
-  //     printf("%d *%d ", dev_psP1[ii], dev_psP2[ii]);
+  //     // printf("%d *%d ", psP1[ii], psP2[ii]);
+  //     printf("%d ", psP1[ii]);
   //   }
   //   printf("\nend\n");
   //   for(int ii=0; ii<sizeQ; ++ii){
-  //     printf("%d *%d ", dev_psQ1[ii], dev_psQ2[ii]);
+  //     // printf("%d *%d ", psQ1[ii], psQ2[ii]);
+  //     printf("%d ", psQ1[ii]);
   //   }
   //   printf("\nend\n");
   // }
@@ -371,8 +380,15 @@ Runs in GPU
 Called from Host
 -------------------------------------------------------------------
 */
-__global__ void deviceCalculateIntersections(double *polyPX, double *polyPY, double *polyQX, double *polyQY, int sizeP, int sizeQ, int *psP1, int *psP2, int *psQ1, int *psQ2, double *intersectionsP, double *intersectionsQ, int *neighborP, int *neighborQ, int *neighborMapP, int *neighborMapQ, int sizeNP, int sizeNQ, int *initLabelsP, int *initLabelsQ){
-  int id=blockIdx.x+threadIdx.x;
+__global__ void deviceCalculateIntersections(
+                  double *polyPX, double *polyPY, 
+                  double *polyQX, double *polyQY, 
+                  int sizeP, int sizeQ, 
+                  int *psP1, int *psP2, int *psQ1, int *psQ2, 
+                  double *intersectionsP, double *intersectionsQ, 
+                  int *neighborP, int *neighborQ, int *neighborMapP, int *neighborMapQ, 
+                  int *initLabelsQ){
+  int id=blockDim.x*blockIdx.x+threadIdx.x;
   double alpha;
   double beta;
   point I;
@@ -557,12 +573,29 @@ __global__ void deviceCalculateIntersections(double *polyPX, double *polyPY, dou
       } 
     }
   }
+}
 
-  // Apply initial label
-  __syncthreads();
-  // noly worls with the intersectionP part and copy lables to Q later
+/*
+-----------------------------------------------------------------
+Function to calculate initial label
+Returns 
+  *initial labels x2 (P and Q)
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
+*/
+__global__ void calculateInitLabel(
+                int sizeP, int *psP2,
+                double *intersectionsP, double *intersectionsQ,
+                int *neighborQ, int *neighborMapP,
+                int sizeNP, int sizeNQ, int *initLabelsP, int *initLabelsQ){
+
+  int id=blockDim.x*blockIdx.x+threadIdx.x;
+  int pid=id;
   if(id>=sizeP) return;
+  printf("itnit lbl id %d\n", id);
   int start=psP2[pid], end=psP2[pid+1];
+  // int start=psP2[id], end=psP2[id+1];
   int tmpId, nId, pMNId, pPNId;
   point pM, pP, qM, qP, current;
   int qMType, qPType, tmpIniLabel;
@@ -864,7 +897,14 @@ int getCircularIdHost(int id, int maxCount){
 }
 
 // count how many intersection points and prefix sums
-void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double *polyQY, int sizeP, int sizeQ, int *countNonDegenIntP, int *countNonDegenIntQ, double **intersectionsP, double **intersectionsQ, int **initLabelsP, int **initLabelsQ){
+void countIntersections(
+                  double *polyPX, double *polyPY, 
+                  double *polyQX,  double *polyQY, 
+                  int sizeP, int sizeQ, 
+                  int *countNonDegenIntP, int *countNonDegenIntQ, 
+                  double **intersectionsP, double **intersectionsQ, 
+                  int **initLabelsP, int **initLabelsQ,
+                  int **neighborMapP, int **neighborMapQ, int **neighborP, int **neighborQ){
   double *dev_polyPX, *dev_polyPY, *dev_polyQX, *dev_polyQY;
   int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2;
   int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
@@ -886,28 +926,38 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   cudaMemcpy(dev_polyQX, polyQX, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_polyQY, polyQY, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
 
-  int threadsPerBlock = 256;
+  int threadsPerBlock = 5;
   int blocksPerGrid = (2*(sizeP+sizeQ) + threadsPerBlock - 1) / threadsPerBlock;
   dim3 dimBlock(threadsPerBlock, 1, 1), dimGrid(blocksPerGrid, 1, 1); 
+  printf("blockDim %d gridDim %d\n", dimBlock.x, dimGrid.x);
 
-  deviceCountIntersections<<<dimGrid, dimBlock>>>(dev_polyPX, dev_polyPY, dev_polyQX, dev_polyQY, sizeP, sizeQ, dev_psP1, dev_psP2, dev_psQ1, dev_psQ2);
+  deviceCountIntersections<<<dimGrid, dimBlock>>>(
+        dev_polyPX, dev_polyPY, 
+        dev_polyQX, dev_polyQY, 
+        sizeP, sizeQ, dev_psP1, 
+        dev_psP2, dev_psQ1, dev_psQ2);
 
   cudaMemcpy(&psP1, dev_psP1, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psP2, dev_psP2, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ1, dev_psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ2, dev_psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
 
-  // for (int i = 0; i < sizeQ+1; ++i)
-  // {
+  thrust::exclusive_scan(thrust::host, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
+  thrust::exclusive_scan(thrust::host, psP2, psP2 + sizeP+1, psP2);
+  thrust::exclusive_scan(thrust::host, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
+  thrust::exclusive_scan(thrust::host, psQ2, psQ2 + sizeQ+1, psQ2);
+
+  // for (int i = 0; i < sizeQ+1; ++i){
   //   printf(" %d ", psQ2[i]);
   // }
   // printf("--- \n");
 
-  // for (int i = 0; i < sizeQ+1; ++i)
-  // {
+  // for (int i = 0; i < sizeQ+1; ++i){
   //   printf(" %d ", psQ1[i]);
   // }
   // printf("--- \n");
+  cudaDeviceSynchronize();
+  // return;
   // Phase 2: Calcualte intersections and save them in the arrays. Make neighbor connections
   // int countIntersections=psP1[sizeP-1];
   // int countNonDegenIntP=psP2[sizeP-1]+(psP1[sizeP-1]-psP1[sizeP-2])+1;
@@ -918,7 +968,8 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   *countNonDegenIntQ=psQ2[sizeQ];
   // printf("non degen size %d %d\n", countNonDegenIntP, countNonDegenIntQ);
   // double intersectionsP[*countNonDegenIntP*3], intersectionsQ[*countNonDegenIntQ*3];
-  int neighborP[countIntersections], neighborQ[countIntersections], neighborMapP[*countNonDegenIntP], neighborMapQ[*countNonDegenIntQ];
+  // int neighborP[countIntersections], neighborQ[countIntersections];
+  // int neighborMapP[*countNonDegenIntP], neighborMapQ[*countNonDegenIntQ];
   // int initLabelsP[*countNonDegenIntP], initLabelsQ[*countNonDegenIntQ];
   double *dev_intersectionsP, *dev_intersectionsQ;
   int *dev_neighborP, *dev_neighborQ, *dev_neighborMapP, *dev_neighborMapQ, *dev_initLabelsP, *dev_initLabelsQ;
@@ -927,6 +978,10 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   *intersectionsQ=(double *)malloc(*countNonDegenIntQ*3*sizeof(double));
   *initLabelsP=(int *)malloc(*countNonDegenIntP*sizeof(int));
   *initLabelsQ=(int *)malloc(*countNonDegenIntQ*sizeof(int));
+  *neighborMapP=(int *)malloc(*countNonDegenIntP*sizeof(int));
+  *neighborMapQ=(int *)malloc(*countNonDegenIntQ*sizeof(int));
+  *neighborP=(int *)malloc(countIntersections*sizeof(int));
+  *neighborQ=(int *)malloc(countIntersections*sizeof(int));
 
   // Allocate memory in device 
   cudaMalloc((void **) &dev_intersectionsP, *countNonDegenIntP*3*sizeof(double));
@@ -935,48 +990,53 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
   cudaMalloc((void **) &dev_neighborQ, countIntersections*sizeof(int));
   cudaMalloc((void **) &dev_neighborMapP, *countNonDegenIntP*sizeof(int));
   cudaMalloc((void **) &dev_neighborMapQ, *countNonDegenIntQ*sizeof(int));
-  cudaMalloc((void **) &dev_initLabelsP, *countNonDegenIntP*sizeof(int));
   cudaMalloc((void **) &dev_initLabelsQ, *countNonDegenIntQ*sizeof(int));
 
-  deviceCalculateIntersections<<<dimGrid, dimBlock>>>(dev_polyPX, dev_polyPY, dev_polyQX, dev_polyQY, sizeP, sizeQ, dev_psP1, dev_psP2, dev_psQ1, dev_psQ2, dev_intersectionsP, dev_intersectionsQ, dev_neighborP, dev_neighborQ, dev_neighborMapP, dev_neighborMapQ, *countNonDegenIntP, *countNonDegenIntQ, dev_initLabelsP, dev_initLabelsQ);
+  cudaMemcpy(dev_psP1, psP1, (sizeP+1)*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_psP2, psP2, (sizeP+1)*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_psQ1, psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_psQ2, psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
+
+  deviceCalculateIntersections<<<dimGrid, dimBlock>>>(
+        dev_polyPX, dev_polyPY, 
+        dev_polyQX, dev_polyQY, 
+        sizeP, sizeQ, 
+        dev_psP1, dev_psP2, dev_psQ1, dev_psQ2, 
+        dev_intersectionsP, dev_intersectionsQ, 
+        dev_neighborP, dev_neighborQ, dev_neighborMapP, dev_neighborMapQ, 
+        dev_initLabelsQ);
+
+  cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*intersectionsP, dev_intersectionsP, *countNonDegenIntP*3*sizeof(double), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*intersectionsQ, dev_intersectionsQ, *countNonDegenIntQ*3*sizeof(double), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*neighborP, dev_neighborP, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*neighborQ, dev_neighborQ, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*neighborMapP, dev_neighborMapP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(*neighborMapQ, dev_neighborMapQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
+
+  cudaMalloc((void **) &dev_initLabelsP, *countNonDegenIntP*sizeof(int));
+
+  cudaMemcpy(dev_initLabelsQ, *initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyHostToDevice);
+
+
+  calculateInitLabel<<<dimGrid, dimBlock>>>(
+      sizeP,  dev_psP2,
+      dev_intersectionsP, dev_intersectionsQ,
+      dev_neighborQ, dev_neighborMapP,
+      *countNonDegenIntP, *countNonDegenIntQ, dev_initLabelsP, dev_initLabelsQ);
 
   cudaMemcpy(*intersectionsP, dev_intersectionsP, *countNonDegenIntP*3*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(*intersectionsQ, dev_intersectionsQ, *countNonDegenIntQ*3*sizeof(double), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&neighborP, dev_neighborP, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&neighborQ, dev_neighborQ, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&neighborMapP, dev_neighborMapP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&neighborMapQ, dev_neighborMapQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(*neighborP, dev_neighborP, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(*neighborQ, dev_neighborQ, countIntersections*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(*neighborMapP, dev_neighborMapP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(*neighborMapQ, dev_neighborMapQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
+
   cudaMemcpy(*initLabelsP, dev_initLabelsP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
-
+  
   cudaDeviceSynchronize();
 
-  // load labeled intersection arrays to PP and QQ
-  /*int prevId;
-  polygon P[countNonDegenIntP], Q[countNonDegenIntQ];
-  vertex tmpVertex;
-  for(int i=0; i<countNonDegenIntP; ++i){
-    tmpVertex.p.x=intersectionsP[i*3];
-    tmpVertex.p.y=intersectionsP[i*3+1];
-    tmpVertex.alpha=intersectionsP[i*3+2];              
-    tmpVertex.label=initLabelsP[i]; 
-    // bool source; 
-    if(intersectionsP[i*3+2]!=-100){
-      tmpVertex.intersection=true;  
-      P[i]->neighbor=Q[neighborMapP[i]];
-    }
-    else tmpVertex.intersection=false;  
-    P[i]=tmpVertex;
-    prevId=getCircularId(i-1, countNonDegenIntP);
-    P[i]->prev=P[prevId];
-    P[prevId]->next=P[i];
-  }*/
-
-  // for(int i=0; i<countNonDegenIntQ; ++i){
-  //   tmpVertex.next=;
-  //   tmpVertex.neighbour=;
-  // }
-/*
   printf("intersectionP");
   for (int i = 0; i < *countNonDegenIntP*3; ++i)
   {
@@ -992,27 +1052,27 @@ void countIntersections(double *polyPX, double *polyPY, double *polyQX,  double 
       printf("\n%d", i/3);
     printf(" %f ", *(*intersectionsQ+i));
   }
+  printf("\n");
+  for (int i = 0; i < countIntersections; ++i)
+  {
+    printf(" %d ", *(*neighborP+i));
+  }
+  printf("\n");
+  for (int i = 0; i < countIntersections; ++i)
+  {
+    printf(" %d ", *(*neighborQ+i));
+  }
+  printf("\n");
+  for (int i = 0; i < *countNonDegenIntP; ++i)
+  {
+    printf(" %d-%d ", i, *(*neighborMapP+i));
+  }
+  printf("\n");
+  for (int i = 0; i < *countNonDegenIntQ; ++i)
+  {
+    printf(" %d-%d ", i, *(*neighborMapQ+i));
+  }
   printf("\n");/*
-  for (int i = 0; i < countIntersections; ++i)
-  {
-    printf(" %d ", neighborP[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countIntersections; ++i)
-  {
-    printf(" %d ", neighborQ[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntP; ++i)
-  {
-    printf(" %d-%d ", i, neighborMapP[i]);
-  }
-  printf("\n");
-  for (int i = 0; i < countNonDegenIntQ; ++i)
-  {
-    printf(" %d-%d ", i, neighborMapQ[i]);
-  }
-  printf("\n");
   for (int i = 0; i < countNonDegenIntP; ++i)
   {
     printf(" %d>%d ", i, initLabelsP[i]);
