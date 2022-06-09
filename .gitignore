@@ -2,5 +2,6 @@ makefile
 program
 *.o
 ~$notes.docx
+~$polygon_graphs.xlsx
 .vscode
 results
