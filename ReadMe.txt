@@ -42,16 +42,24 @@ polyclip [-union] input1.poly input2.poly output.poly
 
 
 ERROR
-The indicese are different in the neighbor arrays due to the complexity. 
-The issue is, we assumed the order of intersection found using PxQ and QxP are same. 
-But, it is diofferent and whole idea of neighbor is broken now
+1. The indicese are different in the neighbor arrays due to the complexity. 
+    The issue is, we assumed the order of intersection found using PxQ and QxP are same. 
+    But, it is different and whole idea of neighbor is broken now
+    FIX:
+        Need to establish PxQ and QxP intersections are found in the same order - correct assumption
+        Invent another index to keep track - implemented this
+        Try to do the same intersection point is both PxQ and QxP and see - did not try. this will not work due to complexity
+    PROGRESS: this issue is fixed in new_mapping git branch
 
-FIX
-Need to establish PxQ and QxP intersections are found in the same order 
-OR invent anothe index to keep track
-Try to do the same intersection point is both PxQ and QxP and see
+2. Found some erros in Init label. 
+    REASONS: Still neighbor connection could be broken. Not sure yet
+    PROGRESS: in progress
 
 TO DO CODE
 1. Shared memory usage
 2. CMBR filter using GPU
 3. Point-in-polygon test GPU
+4. manage when size of PP or QQ >0
+5. Sice we have neighbor map and exact locations of neighbor location in the array, we should
+    be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
+    removing seperate section for Q info handling. 

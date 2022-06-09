@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
       &initLabelsP, &initLabelsQ, 
       &neighborMapP, &neighborMapQ, &neighborP, &neighborQ);
   // -------------------------------------------------------------------------------------------
-return 0;
+// return 0;
   // -------------------------------------------------------------------------------------------
   // Polygon P: (PP)insert intersection vertices and change alpha value in the degenerate cases
   // -------------------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ return 0;
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->intersection << endl; 
+      // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->intersection << endl; 
       i+=2;
     }
     // V->alpha=*(intersectionsP+i+2);
@@ -108,7 +108,7 @@ return 0;
     if(*(alphaValuesP+(i/2))!=-100){
       V->intersection=true;
     }
-    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->intersection << endl;
+    // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->intersection << endl;
     i+=2;
     V=current->next;
   }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
@@ -146,7 +146,7 @@ return 0;
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
+      // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
       i+=2;
     }
     // V->alpha=*(intersectionsQ+i+2);
@@ -155,7 +155,7 @@ return 0;
     if(*(alphaValuesQ+(i/2))!=-100){ 
       V->intersection=true;
     }
-    cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+    // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=2;
     V=current->next;
   }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
@@ -185,19 +185,13 @@ return 0;
   int j=0;
   i=0;
   do{
-    // cout << "== " << i << " " << j << endl;
-    if(*(neighborMapP+i)!=-100){
-      do{
-        // cout << "=========== " << i << " " << j << " "<< *(neighborMapP+i) << endl;
-        if(*(neighborQ+*(neighborMapP+i))==j){
-          V->neighbour=VQ;
-          VQ->neighbour=V;
-          // cout << "===***** " << i << " " << j << endl;
-          break;
-        }
+    if(*(neighborP+i)!=0){
+      VQ=QQ[0].root;
+      for(j=0; j<(*(neighborP+i)-1); ++j){
         VQ=VQ->next;
-        ++j;
-      }while(VQ->p.x!=QQ[0].root->p.x || VQ->p.y!=QQ[0].root->p.y);
+      }
+      V->neighbour=VQ;
+      VQ->neighbour=V;
     }
     V=V->next;
     ++i;
@@ -208,33 +202,33 @@ return 0;
   // -------------------------------------------------------------------------------------------
   // Test print to check PP and QQ updated with intersection points
   // -------------------------------------------------------------------------------------------
-  cout << "\ncount degen " << countNonDegenIntP << endl;
-  for(i=0; i<countNonDegenIntP*2; ++i){
-      if(i%2==0)
-        cout << "\n" << i/2;
-    cout << " " << *(intersectionsP+i) << " ";
-  }
-  cout << "\nprint from PP" << endl;
-  for (vertex* V : PP[0].vertices(ALL)){
-    if(V->intersection)
-      cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
-    else
-      cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" " << V->label << endl;
-  }
+  // cout << "\ncount degen " << countNonDegenIntP << endl;
+  // for(i=0; i<countNonDegenIntP*2; ++i){
+  //     if(i%2==0)
+  //       cout << "\n" << i/2;
+  //   cout << " " << *(intersectionsP+i) << " ";
+  // }
+  // cout << "\nprint from PP" << endl;
+  // for (vertex* V : PP[0].vertices(ALL)){
+  //   if(V->intersection)
+  //     cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+  //   else
+  //     cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" " << V->label << endl;
+  // }
 
-  cout << "\ncount degen " << countNonDegenIntQ << endl;
-  for(i=0; i<countNonDegenIntQ*2; ++i){
-    if(i%2==0)
-      cout << "\n" << i/2;
-    cout << " " << *(intersectionsQ+i) << " ";
-  }
-  cout << "\nprint from QQ" << endl;
-  for (vertex* V : QQ[0].vertices(ALL)){
-    if(V->intersection)
-      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
-    else
-      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
-  }
+  // cout << "\ncount degen " << countNonDegenIntQ << endl;
+  // for(i=0; i<countNonDegenIntQ*2; ++i){
+  //   if(i%2==0)
+  //     cout << "\n" << i/2;
+  //   cout << " " << *(intersectionsQ+i) << " ";
+  // }
+  // cout << "\nprint from QQ" << endl;
+  // for (vertex* V : QQ[0].vertices(ALL)){
+  //   if(V->intersection)
+  //     cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+  //   else
+  //     cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
+  // }
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
