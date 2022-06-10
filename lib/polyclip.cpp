@@ -438,6 +438,7 @@ void labelIntersections() {
         // mark both ends of an intersection chain with chainType (i.e., as DELAYED_*)
         X->label = chainType;
         I->label = chainType;
+        // cout << "lbl2 "<<I->p.x<<","<<I->p.y<<"-"<<chainType<<" "<<X->p.x<<","<<X->p.y<<"-"<<chainType<<endl;
   		}
     }
 

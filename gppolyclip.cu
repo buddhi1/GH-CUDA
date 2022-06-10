@@ -3,6 +3,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <thrust/scan.h>
+#include <cooperative_groups.h>
 
 #include "constants.h"
 
@@ -502,10 +503,10 @@ __global__ void gpuNeighborMap(
       else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
         count2=0;
       if(id<sizeP){
-        if(pid<15) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
+        if(pid<35) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapP[psP2[pid]+count2]=qid;
       }else{
-        if(pid<15) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
+        if(pid<35) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapQ[psQ2[pid]+count2]=qid;
       }
     }
@@ -631,7 +632,7 @@ __global__ void gpuCalculateIntersections(
       for(localI=start; localI<end; ++localI){
         if(pid==neighborMapQ[localI]){
           neighborQId=localI;
-          if(pid<15) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+          if(pid<35) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
           neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
           neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
           neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
@@ -691,9 +692,17 @@ __global__ void gpuCalculateIntersections(
     } else if(i && id>=sizeP){
       initLabelsQ[(psQ2[pid]+count2)]=-100;    //make init label to default -100 
       count1++;
-        if(i==1 || i==3 || i==5 || i==7)
-        // if(i==1 || i==2 || i==5 || i==6)
-          count2++;
+      if(i==1 || i==3 || i==5 || i==7){
+      // if(i==1 || i==2 || i==5 || i==6){
+        nonDegenCount++;
+        count2=nonDegenCount;
+      }
+      else if(i==2 || i==4 || i==6 || i==8)
+        count2=0;
+
+        // if(i==1 || i==3 || i==5 || i==7)
+        // // if(i==1 || i==2 || i==5 || i==6)
+        //   count2++;
         // neighborMapQ[psQ2[pid]+count2]=indexIntQ+count1-1;
         // neighborMapQ2[psQ2[pid]+count2]=indexIntQ+count1-1;
         // neighborQ[indexIntQ+count1-1]=psQ2[pid]+count2;                    //neighbor of new vertex
@@ -753,7 +762,7 @@ __global__ void gpuCalculateIntersections(
   // --------------------------------------------------------------------------------------------
   // local sort for each edge, start to end
   // --------------------------------------------------------------------------------------------
-  /*if(id<sizeP){
+  if(id<sizeP){
     int start=psP2[pid], end=psP2[pid+1];
     // printf(".. %d %d %d\n", id, start+1, end);
     // for(i=start; i<end; ++i){
@@ -768,7 +777,7 @@ __global__ void gpuCalculateIntersections(
       // for(int i=start+1, j=end-1; i<end; ++i, j--){
       // acending order of alpha values 
       for(int i=start+1, j=start+1; i<end; ++i, j++){
-        alphaValuesP[i]=tmpBucketP[alphaSortedIndiciesP[j]];////////////////?????????????????????? need to swap alpha too!!!
+        alphaValuesP[i]=tmpBucketP[j];////////////////?????????????????????? need to swap alpha too!!!
         // (x,y,alpha) tuple change in sorted order
         intersectionsP[alphaSortedIndiciesP[j]*2]=intersectionsP2[i*2];
         intersectionsP[alphaSortedIndiciesP[j]*2+1]=intersectionsP2[i*2+1];
@@ -777,17 +786,63 @@ __global__ void gpuCalculateIntersections(
         //neighbor array update
         neighborP[alphaSortedIndiciesP[j]]=neighborP2[i];
         neighborQ[neighborP2[i]-1]=alphaSortedIndiciesP[j]+1; //+1 is the padding. When reading do -1
+        neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new originla to be used with sorted Q array
       } 
       // for(int i=start, j=end-1; i<end; ++i, --j){
       //   printf("*(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], alphaSortedIndiciesP[j]);
       // }
     } 
-  }else{
+  }
+  // else{
+  //   int start=psQ2[pid], end=psQ2[pid+1];
+  //   // printf(".. %d %d %d\n", id, start+1, end);
+  //   // for(i=start; i<end; ++i){
+  //   //   printf("(%d %f %f %f %d) \n", id, intersectionsP[i*3], intersectionsP[i*3+1], intersectionsP[i*3+2], alphaValuesP[i]);
+  //   // }
+  //   // sort intersection vertices in this edge locally
+  //   if((end-start)>2){
+  //     gpuRadixsort(alphaValuesQ, tmpBucketQ, alphaSortedIndiciesQ, start+1, end);
+  //     // using sorted index array, change intersection locations in the array and neighbors
+  //     // printf("ssss %d %d %d\n", id, start, end);
+  //     // decending order JUST FOR TESING
+  //     // for(int i=start+1, j=end-1; i<end; ++i, j--){
+  //     // acending order of alpha values 
+  //     for(int i=start+1, j=start+1; i<end; ++i, j++){
+  //       alphaValuesQ[i]=tmpBucketQ[j];////////////////?????????????????????? need to swap alpha too!!!
+  //       // (x,y,alpha) tuple change in sorted order
+  //       intersectionsQ[alphaSortedIndiciesQ[j]*2]=intersectionsQ2[i*2];
+  //       intersectionsQ[alphaSortedIndiciesQ[j]*2+1]=intersectionsQ2[i*2+1];
+  //       //neighborMap update
+  //       // neighborMapQ[alphaSortedIndiciesQ[j]]=neighborMapQ2[i];
+  //       //neighbor array update
+  //       neighborQ[alphaSortedIndiciesQ[j]]=neighborQ2[i];
+  //       neighborP[neighborQ2[i]-1]=alphaSortedIndiciesQ[j]+1; //+1 is the padding. When reading do -1
+  //     } 
+  //     // for(int i=start, j=end-1; i<end; ++i, --j){
+  //     //   printf("****(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], alphaSortedIndiciesQ[j]);
+  //     // }
+  //   } 
+  // }
+  // --------------------------------------------------------------------------------------------
+}
+
+/*
+-----------------------------------------------------------------
+Function to save vertices of Q in edge wise sorted order
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
+*/
+__global__ void gpuSortPolyQ(
+                  int sizeP, int sizeQ, 
+                  int *psQ2, 
+                  double *intersectionsQ, double *intersectionsQ2,
+                  int *alphaValuesQ, int *tmpBucketQ,  int *alphaSortedIndiciesQ,
+                  int *neighborP, int *neighborQ, int *neighborQ2){
+  int id=blockDim.x*blockIdx.x+threadIdx.x;
+  if(id>=sizeP && id<(sizeP+sizeQ)){
+    int pid=id-sizeP;
     int start=psQ2[pid], end=psQ2[pid+1];
-    // printf(".. %d %d %d\n", id, start+1, end);
-    // for(i=start; i<end; ++i){
-    //   printf("(%d %f %f %f %d) \n", id, intersectionsP[i*3], intersectionsP[i*3+1], intersectionsP[i*3+2], alphaValuesP[i]);
-    // }
     // sort intersection vertices in this edge locally
     if((end-start)>2){
       gpuRadixsort(alphaValuesQ, tmpBucketQ, alphaSortedIndiciesQ, start+1, end);
@@ -797,22 +852,16 @@ __global__ void gpuCalculateIntersections(
       // for(int i=start+1, j=end-1; i<end; ++i, j--){
       // acending order of alpha values 
       for(int i=start+1, j=start+1; i<end; ++i, j++){
-        alphaValuesQ[i]=tmpBucketQ[alphaSortedIndiciesQ[j]];////////////////?????????????????????? need to swap alpha too!!!
+        alphaValuesQ[i]=tmpBucketQ[j];////////////////?????????????????????? need to swap alpha too!!!
         // (x,y,alpha) tuple change in sorted order
         intersectionsQ[alphaSortedIndiciesQ[j]*2]=intersectionsQ2[i*2];
         intersectionsQ[alphaSortedIndiciesQ[j]*2+1]=intersectionsQ2[i*2+1];
-        //neighborMap update
-        // neighborMapQ[alphaSortedIndiciesQ[j]]=neighborMapQ2[i];
         //neighbor array update
         neighborQ[alphaSortedIndiciesQ[j]]=neighborQ2[i];
         neighborP[neighborQ2[i]-1]=alphaSortedIndiciesQ[j]+1; //+1 is the padding. When reading do -1
       } 
-      // for(int i=start, j=end-1; i<end; ++i, --j){
-      //   printf("****(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], alphaSortedIndiciesQ[j]);
-      // }
     } 
-  }*/
-  // --------------------------------------------------------------------------------------------
+  }
 }
 
 /*
@@ -1049,6 +1098,13 @@ void calculateIntersections(
         dev_neighborMapP, dev_neighborMapQ, dev_neighborMapP2, dev_neighborMapQ2,
         dev_initLabelsQ);
 
+  gpuSortPolyQ<<<dimGrid, dimBlock>>>(
+        sizeP, sizeQ, 
+        dev_psQ2, 
+        dev_intersectionsQ, dev_intersectionsQ2,
+        dev_alphaValuesQ, dev_tmpBucketQ,  dev_alphaSortedIndiciesQ,
+        dev_neighborP, dev_neighborQ, dev_neighborQ2);
+
   // Phase4: Inital label classificaiton
   // cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMalloc((void **) &dev_initLabelsP, *countNonDegenIntP*sizeof(int));
@@ -1078,7 +1134,7 @@ void calculateIntersections(
   
   cudaDeviceSynchronize();
 
-  int limit=20;
+  int limit=35;
 
   printf("intersectionP");
   // for (int i = 0; i < *countNonDegenIntP*2; ++i){
@@ -1090,7 +1146,7 @@ void calculateIntersections(
   }
   printf("\n\nintersectionQ");
   // for (int i = 0; i < *countNonDegenIntQ*2; ++i){
-  for (int i = 0; i < limit*2; ++i){
+  for (int i = 0; i < 35*2; ++i){
     if(i%2==0)
       printf("\n%d %d ", i/2, *(*alphaValuesQ+(i/2)));
     printf(" %f ", *(*intersectionsQ+i));
@@ -1106,12 +1162,12 @@ void calculateIntersections(
   // printf("\n");
   printf("\n");
   // for (int i = 0; i < *countNonDegenIntP; ++i){  
-  for (int i = 0; i < limit; ++i){
+  for (int i = 0; i < 35; ++i){
     printf(" %d-%d ", i, *(*neighborP+i));
   }
   printf("\n");
   // for (int i = 0; i < *countNonDegenIntQ; ++i){
-  for (int i = 0; i < limit; ++i){
+  for (int i = 0; i < 35; ++i){
     printf(" %d-%d ", i, *(*neighborQ+i));
   }
   // printf("\n");

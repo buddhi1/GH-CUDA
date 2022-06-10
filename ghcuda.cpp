@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
       }
       V->neighbour=VQ;
       VQ->neighbour=V;
-      if(i<15) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << "-" << VQ->p.x << "," << VQ->p.y << endl;
+      if(i<35) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << "-" << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
     }
     V=V->next;
     ++i;
@@ -224,13 +224,13 @@ int main(int argc, char* argv[])
   //     cout << "\n" << i/2;
   //   cout << " " << *(intersectionsQ+i) << " ";
   // }
-  // cout << "\nprint from QQ" << endl;
-  // for (vertex* V : QQ[0].vertices(ALL)){
-  //   if(V->intersection)
-  //     cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
-  //   else
-  //     cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
-  // }
+  cout << "\nprint from QQ" << endl;
+  for (vertex* V : QQ[0].vertices(ALL)){
+    if(V->intersection)
+      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+    else
+      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
+  }
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
