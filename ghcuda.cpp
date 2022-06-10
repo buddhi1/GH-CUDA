@@ -192,6 +192,7 @@ int main(int argc, char* argv[])
       }
       V->neighbour=VQ;
       VQ->neighbour=V;
+      if(i<15) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << "-" << VQ->p.x << "," << VQ->p.y << endl;
     }
     V=V->next;
     ++i;
@@ -203,7 +204,8 @@ int main(int argc, char* argv[])
   // Test print to check PP and QQ updated with intersection points
   // -------------------------------------------------------------------------------------------
   // cout << "\ncount degen " << countNonDegenIntP << endl;
-  // for(i=0; i<countNonDegenIntP*2; ++i){
+  // // for(i=0; i<countNonDegenIntP*2; ++i){
+  // for(i=0; i<12*2; ++i){
   //     if(i%2==0)
   //       cout << "\n" << i/2;
   //   cout << " " << *(intersectionsP+i) << " ";

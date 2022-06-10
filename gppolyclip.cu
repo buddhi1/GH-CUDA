@@ -447,7 +447,7 @@ __global__ void gpuNeighborMap(
   double alpha;
   double beta;
   point I;
-  int count1=0, count2=0, size=sizeQ;
+  int count1=0, count2=0, size=sizeQ, nonDegenCount=0;
   double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
 
   if(id>=sizeP+sizeQ) return;
@@ -495,13 +495,17 @@ __global__ void gpuNeighborMap(
     int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
     if(i!=0){
       count1++;
-      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
-        count2++;
+      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7))){
+        nonDegenCount++;
+        count2=nonDegenCount;
+      }
+      else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
+        count2=0;
       if(id<sizeP){
-        // printf("## %d %d \n", psP2[pid]+count2, qid);
+        if(pid<15) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapP[psP2[pid]+count2]=qid;
       }else{
-        // printf("#qqqq# %d %d \n", psQ2[pid]+count2, qid);
+        if(pid<15) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapQ[psQ2[pid]+count2]=qid;
       }
     }
@@ -533,7 +537,7 @@ __global__ void gpuCalculateIntersections(
   double alpha;
   double beta;
   point I;
-  int count1=0, count2=0, size=sizeQ, indexIntP, indexIntQ, start, end, localI, neighborQId;
+  int count1=0, count2=0, nonDegenCount=0, size=sizeQ, indexIntP, indexIntQ, start, end, localI, neighborQId;
   double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
 
   if(id>=sizeP+sizeQ) return;
@@ -609,8 +613,12 @@ __global__ void gpuCalculateIntersections(
     // }
     if(i && id<sizeP){
       count1++;
-      if(i==1 || i==3 || i==5 || i==7)
-        count2++;
+      if(i==1 || i==3 || i==5 || i==7){
+        nonDegenCount++;
+        count2=nonDegenCount;
+      }
+      else if(i==2 || i==4 || i==6 || i==8)
+        count2=0;
       // neighborMapP[psP2[pid]+count2]=indexIntP+count1-1;
       // neighborMapP2[psP2[pid]+count2]=indexIntP+count1-1;
       // neighborP[indexIntP+count1-1]=psP2[pid]+count2;                    //neighbor of new vertex
@@ -623,12 +631,12 @@ __global__ void gpuCalculateIntersections(
       for(localI=start; localI<end; ++localI){
         if(pid==neighborMapQ[localI]){
           neighborQId=localI;
-          // printf("&&& %d %d (%d %d)\n", id, pid, psP2[pid]+count2, neighborQId);
+          if(pid<15) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
           neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
           neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
           neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
           neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          localI=end; // break;
+          localI=end+2; // break;
         }
       }
 
@@ -745,7 +753,7 @@ __global__ void gpuCalculateIntersections(
   // --------------------------------------------------------------------------------------------
   // local sort for each edge, start to end
   // --------------------------------------------------------------------------------------------
-  if(id<sizeP){
+  /*if(id<sizeP){
     int start=psP2[pid], end=psP2[pid+1];
     // printf(".. %d %d %d\n", id, start+1, end);
     // for(i=start; i<end; ++i){
@@ -803,7 +811,7 @@ __global__ void gpuCalculateIntersections(
       //   printf("****(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], alphaSortedIndiciesQ[j]);
       // }
     } 
-  }
+  }*/
   // --------------------------------------------------------------------------------------------
 }
 
@@ -947,14 +955,16 @@ void calculateIntersections(
   thrust::exclusive_scan(thrust::host, psQ2, psQ2 + sizeQ+1, psQ2);
 
   // for (int i = 0; i < sizeQ+1; ++i){
-  //   printf(" %d ", psQ2[i]);
-  // }
-  // printf("--- \n");
+  for (int i = 0; i < 15+1; ++i){
+    printf(" %d-%d ", i, psP2[i]);
+  }
+  printf("--- \n");
 
   // for (int i = 0; i < sizeQ+1; ++i){
-  //   printf(" %d ", psQ1[i]);
-  // }
-  // printf("--- \n");
+  for (int i = 0; i < 15+1; ++i){
+    printf(" %d-%d ", i, psQ2[i]);
+  }
+  printf("--- \n");
   cudaDeviceSynchronize();
 
   //Phase2: NEW- Fill neighborMap

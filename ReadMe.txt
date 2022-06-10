@@ -51,7 +51,7 @@ ERROR
         Try to do the same intersection point is both PxQ and QxP and see - did not try. this will not work due to complexity
     PROGRESS: this issue is fixed in new_mapping git branch
 
-2. Found some erros in Init label. 
+2. Found some errors in Init label. 
     REASONS: Still neighbor connection could be broken. Not sure yet
     PROGRESS: in progress
 
