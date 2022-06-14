@@ -329,40 +329,9 @@ Called from Device
 -------------------------------------------------------------------
 */
 __device__ int gpuGetVertex2Index(int vertex1Index, int polySize[], int polyId){
-  if(vertex1Index<polySize[polyId+1]-1) return vertex1Index+1;
-  else if(vertex1Index=polySize[polyId+1]-1) return polySize[polyId];
-}
-
-/*
------------------------------------------------------------------
-Function: iterative binary search 
-Returns location of x in given array arr[l..r] if present,
-  otherwise -1
-Runs in GPU
-Called from Device
--------------------------------------------------------------------
-*/
-__device__ int gpuBinarySearch(int arr[], int numPol, int x){
-  // ***********************conver to binary search like search *******************
-  // while (l <= r){
-  //   int m = l + (r - l) / 2;
-  //   // Check if x is present at mid
-  //   if (arr[m] == x)
-  //     return m;
-  //   // If x greater, ignore left half
-  //   if (arr[m] < x)
-  //     l = m + 1;
-  //   // If x is smaller, ignore right half
-  //   else
-  //     r = m - 1;
-  // }
-  // // if we reach here, then element was not present
-  // return -1;
-  for(int i=0; i<numPol; ++i){
-    if(arr[i]<=x && arr[i+1]>x)
-      return i;
-  }
-  return -1;
+  if(vertex1Index<polySize[polyId]-1) return vertex1Index+1;
+  else if(polyId==0) return 0; 
+  else return polyId-1;
 }
 
 /*
@@ -441,108 +410,6 @@ __global__ void gpuCountIntersections(
     // if(id==9 || id==0)
       printf("id %d count1 %d count2  %d P(%f,%f) Q(%f,%f) %d\n", id, count1, count2, P1.x, P1.y, Q1.x, Q1.y, i);
 
-  }
-  count2++; //represent the parent vertex 
-  if(id<sizeP){
-    psP1[pid]=count1;
-    psP2[pid]=count2;
-  } else{
-    psQ1[pid]=count1;
-    psQ2[pid]=count2;
-  }
-
-  // __syncthreads();
-  // thrust::exclusive_scan(thrust::device, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
-  // thrust::exclusive_scan(thrust::device, psP2, psP2 + sizeP+1, psP2);
-  // thrust::exclusive_scan(thrust::device, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
-  // thrust::exclusive_scan(thrust::device, psQ2, psQ2 + sizeQ+1, psQ2);
-  // printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
-  // __syncthreads();
-  // if(id==0){
-  //   printf("%d \n", sizeP);
-  //   for(int ii=0; ii<sizeP; ++ii){
-  //     // printf("%d *%d ", psP1[ii], psP2[ii]);
-  //     printf("%d ", psP1[ii]);
-  //   }
-  //   printf("\nend\n");
-  //   for(int ii=0; ii<sizeQ; ++ii){
-  //     // printf("%d *%d ", psQ1[ii], psQ2[ii]);
-  //     printf("%d ", psQ1[ii]);
-  //   }
-  //   printf("\nend\n");
-  // }
-}
-
-/*
------------------------------------------------------------------
-Function to count all intersections. Works with multiple components in PP and QQ
-Return prefix sum arrays.
-  *prefix sum of count of all intersection vertices x2 (P and Q)
-  *prefix sum of count of all intersection vertices excluding 
-   degenerate cases x2 (P and Q)
-Runs in GPU
-Called from Host
--------------------------------------------------------------------
-*/
-__global__ void gpuCountIntersectionsMultiComp(
-                  double *polyPX, double *polyPY, 
-                  double *polyQX,  double *polyQY, 
-                  int sizeP, int sizeQ, int *sizesPP, int *sizesQQ, int sizePP, int sizeQQ,
-                  int *psP1, int *psP2, int *psQ1, int *psQ2){
-  int id=blockDim.x*blockIdx.x+threadIdx.x;
-  double alpha;
-  double beta;
-  point I;
-  int count1=0, count2=0, size=sizeQ;
-  double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
-  int *sizes1=sizesPP, *sizes2=sizesQQ, pols1=sizePP, pols2=sizeQQ, poly1Id, poly2Id, qid2, pid2;
-
-  if(id>=sizeP+sizeQ) return;
-  point P1, P2, Q1, Q2;
-  int pid=id;
-  if(id>=sizeP){
-    size=sizeP;
-    pols1=sizeQQ;
-    pols2=sizePP;
-    sizes1=sizesQQ;
-    sizes2=sizesPP;
-    poly1X=polyQX; 
-    poly1Y=polyQY; 
-    poly2X=polyPX;
-    poly2Y=polyPY;
-    pid=id-sizeP;
-  }
-  // if(id==24){
-  //   for(int i=0; i<pols+1; ++i){
-  //     printf("**** %d-%d>%d ", id, i, sizes2[i]);
-  //   }
-  //   printf("\n");
-  // }
-  for(int qid=0; qid<size; qid++){
-    poly1Id=gpuBinarySearch(sizes1, pols1, pid);
-    poly2Id=gpuBinarySearch(sizes2, pols2, qid);
-    P1.x = poly1X[pid];
-    P1.y = poly1Y[pid];
-    Q1.x = poly2X[qid];
-    Q1.y = poly2Y[qid];
-
-    pid2=gpuGetVertex2Index(pid, sizes1, poly1Id);
-    qid2=gpuGetVertex2Index(qid, sizes2, poly2Id);
-    // if (id<24) printf("point 2 id %d %d %d \n", qid, qid2, poly1Id);
-    P2.x = poly1X[pid2];
-    P2.y = poly1Y[pid2];
-    Q2.x = poly2X[qid2];
-    Q2.y = poly2Y[qid2];
-    // determine intersection or overlap type
-    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-    if(i!=0){
-      count1++;
-      // if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==2 || i==5 || i==6)))
-      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
-        count2++;
-    }
-    // if(id==23)
-      // printf("id %d count1 %d count2  %d P(%f,%f)(%f,%f) Q(%f,%f)(%f,%f) %d\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, i);
   }
   count2++; //represent the parent vertex 
   if(id<sizeP){
@@ -662,84 +529,6 @@ __global__ void gpuNeighborMap(
 
 /*
 -----------------------------------------------------------------
-Function to neighbor map intersections. Works with multiple components in PP and QQ
-Return prefix sum arrays.
-  *neighbor map all intersection vertices x2 (P and Q)
-Runs in GPU
-Called from Host
--------------------------------------------------------------------
-*/
-__global__ void gpuNeighborMapMultiComp(
-                  double *polyPX, double *polyPY, 
-                  double *polyQX,  double *polyQY, 
-                  int sizeP, int sizeQ, int *sizesPP, int *sizesQQ, int sizePP, int sizeQQ,
-                  int *psP2, int *psQ2,
-                  int *neighborMapP, int *neighborMapQ){
-  int id=blockDim.x*blockIdx.x+threadIdx.x;
-  double alpha;
-  double beta;
-  point I;
-  int count1=0, count2=0, size=sizeQ, nonDegenCount=0;
-  double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
-  int *sizes1=sizesPP, *sizes2=sizesQQ, pols1=sizePP, pols2=sizeQQ, poly1Id, poly2Id, qid2, pid2;
-
-  if(id>=sizeP+sizeQ) return;
-  point P1, P2, Q1, Q2;
-  int pid=id;
-  if(id>=sizeP){
-    size=sizeP;
-    pols1=sizeQQ;
-    pols2=sizePP;
-    sizes1=sizesQQ;
-    sizes2=sizesPP;
-    poly1X=polyQX; 
-    poly1Y=polyQY; 
-    poly2X=polyPX;
-    poly2Y=polyPY;
-    pid=id-sizeP;
-    neighborMapQ[psQ2[pid]+count2]=-100;   
-  }else{
-    neighborMapP[psP2[pid]+count2]=-100;
-  }
-  for(int qid=0; qid<size; qid++){
-    poly1Id=gpuBinarySearch(sizes1, pols1, pid);
-    poly2Id=gpuBinarySearch(sizes2, pols2, qid);
-    P1.x = poly1X[pid];
-    P1.y = poly1Y[pid];
-    Q1.x = poly2X[qid];
-    Q1.y = poly2Y[qid];
-
-    pid2=gpuGetVertex2Index(pid, sizes1, poly1Id);
-    qid2=gpuGetVertex2Index(qid, sizes2, poly2Id);
-    // if (id<24) printf("point 2 id %d %d %d \n", qid, qid2, poly1Id);
-    P2.x = poly1X[pid2];
-    P2.y = poly1Y[pid2];
-    Q2.x = poly2X[qid2];
-    Q2.y = poly2Y[qid2];
-
-    // determine intersection or overlap type
-    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-    if(i!=0){
-      count1++;
-      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7))){
-        nonDegenCount++;
-        count2=nonDegenCount;
-      }
-      else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
-        count2=0;
-      if(id<sizeP){
-        // if(pid<35) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
-        neighborMapP[psP2[pid]+count2]=qid;
-      }else{
-        // if(pid<35) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
-        neighborMapQ[psQ2[pid]+count2]=qid;
-      }
-    }
-  }
-}
-
-/*
------------------------------------------------------------------
 Function to calculate all intersections save them in the correct 
 location using prefixsum arrays and make neighbor connections
 Returns 
@@ -828,313 +617,6 @@ __global__ void gpuCalculateIntersections(
       P2.x = poly1X[pid+1];
       P2.y = poly1Y[pid+1];
     }
-
-    //
-    // determine intersection or overlap type
-    //
-    // IntersectionType i = intersect(edgeP, edgeQ, alpha, beta);
-    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-    // if(i!=0){
-    //   printf("%d %d (%f,%f) %d(%f,%f) %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, i);
-    // }
-    if(i && id<sizeP){
-      count1++;
-      if(i==1 || i==3 || i==5 || i==7){
-        nonDegenCount++;
-        count2=nonDegenCount;
-      }
-      else if(i==2 || i==4 || i==6 || i==8)
-        count2=0;
-      // neighborMapP[psP2[pid]+count2]=indexIntP+count1-1;
-      // neighborMapP2[psP2[pid]+count2]=indexIntP+count1-1;
-      // neighborP[indexIntP+count1-1]=psP2[pid]+count2;                    //neighbor of new vertex
-      // neighborP2[indexIntP+count1-1]=psP2[pid]+count2; 
-
-      start=psQ2[neighborMapP[psP2[pid]+count2]];
-      end=psQ2[neighborMapP[psP2[pid]+count2]+1];
-      // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
-      // local search to find the index of qid
-      for(localI=start; localI<end; ++localI){
-        if(pid==neighborMapQ[localI]){
-          neighborQId=localI;
-          // if(pid<35) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
-          neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          localI=end+2; // break;
-        }
-      }
-
-      switch(i) {
-        // case X_INTERSECTION:
-        case 1:
-          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
-          // printf("* %d %d %d %d %f %f\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2, I.x, I.y);
-          intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-          intersectionsP[(psP2[pid]+count2)*2+1]=I.y;
-          intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-          intersectionsP2[(psP2[pid]+count2)*2+1]=I.y;
-          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-        // X-overlap
-        case 5:
-          // printf("** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
-          intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
-          intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
-          intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
-          intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
-          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-        // case T_INTERSECTION_Q:
-        // case T_OVERLAP_Q:
-        case 2:
-        case 6:
-          // intersectionsP[psP2[pid]*3+2]=alpha;          //***** error prone. Did not checked in depth
-          alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-        break;
-        // case T_INTERSECTION_P:
-        // case T_OVERLAP_P:
-        case 3:
-        case 7:
-          // printf("*** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
-          intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
-          intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
-          intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
-          intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
-          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-        // case V_INTERSECTION:
-        // case V_OVERLAP:
-        case 4:
-        case 8:
-          // printf("%d %d (%f,%f) %d(%f,%f) [%d %d %d] %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, (psP2[pid]+count2), indexIntP, count1-1, i);
-          alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-      } 
-    } else if(i && id>=sizeP){
-      initLabelsQ[(psQ2[pid]+count2)]=-100;    //make init label to default -100 
-      count1++;
-      if(i==1 || i==3 || i==5 || i==7){
-      // if(i==1 || i==2 || i==5 || i==6){
-        nonDegenCount++;
-        count2=nonDegenCount;
-      }
-      else if(i==2 || i==4 || i==6 || i==8)
-        count2=0;
-
-        // if(i==1 || i==3 || i==5 || i==7)
-        // // if(i==1 || i==2 || i==5 || i==6)
-        //   count2++;
-        // neighborMapQ[psQ2[pid]+count2]=indexIntQ+count1-1;
-        // neighborMapQ2[psQ2[pid]+count2]=indexIntQ+count1-1;
-        // neighborQ[indexIntQ+count1-1]=psQ2[pid]+count2;                    //neighbor of new vertex
-        // neighborQ2[indexIntQ+count1-1]=psQ2[pid]+count2;  
-      switch(i) {
-        // case X_INTERSECTION:
-        case 1:
-          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
-          // printf("/* %d %d %d %d %f %f\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2, I.x, I.y);
-          intersectionsQ[(psQ2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-          intersectionsQ[(psQ2[pid]+count2)*2+1]=I.y;
-          intersectionsQ2[(psQ2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-          intersectionsQ2[(psQ2[pid]+count2)*2+1]=I.y;
-          alphaValuesQ[psQ2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-        // case X_OVERLAP:
-        case 5:
-          // printf("/** %d %d %d %d\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2);
-          intersectionsQ[(psQ2[pid]+count2)*2]=Q1.x;    
-          intersectionsQ[(psQ2[pid]+count2)*2+1]=Q1.y;
-          intersectionsQ2[(psQ2[pid]+count2)*2]=Q1.x;    
-          intersectionsQ2[(psQ2[pid]+count2)*2+1]=Q1.y;
-          alphaValuesQ[psQ2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*beta;
-          break;
-        // case T_INTERSECTION_Q:
-        // case T_OVERLAP_Q: 
-        // was 2, 6
-        case 3:
-        case 7:
-          // printf("/*** %d %d %d %d\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2);
-          intersectionsQ[(psQ2[pid]+count2)*2]=Q1.x;
-          intersectionsQ[(psQ2[pid]+count2)*2+1]=Q1.y;
-          intersectionsQ2[(psQ2[pid]+count2)*2]=Q1.x;
-          intersectionsQ2[(psQ2[pid]+count2)*2+1]=Q1.y;
-          alphaValuesQ[psQ2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-        // case T_INTERSECTION_P:
-        // case T_OVERLAP_P:
-        // was 3, 7
-        case 2:
-        case 6:
-          alphaValuesQ[psQ2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-        break;
-        // case V_INTERSECTION:
-        // case V_OVERLAP:
-        case 4:
-        case 8:
-          // printf("/**** %d %d %d %d\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2);
-          // printf("%d %d (%f,%f) %d(%f,%f) [%d %d %d] %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, (psQ2[pid]+count2), indexIntQ, count1-1, i);
-          alphaValuesQ[psQ2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-          break;
-      } 
-    }
-  }
-  // --------------------------------------------------------------------------------------------
-  // local sort for each edge, start to end
-  // --------------------------------------------------------------------------------------------
-  if(id<sizeP){
-    int start=psP2[pid], end=psP2[pid+1];
-    // printf(".. %d %d %d\n", id, start+1, end);
-    // for(i=start; i<end; ++i){
-    //   printf("(%d %f %f %f %d) \n", id, intersectionsP[i*3], intersectionsP[i*3+1], intersectionsP[i*3+2], alphaValuesP[i]);
-    // }
-    // sort intersection vertices in this edge locally
-    if((end-start)>2){
-      gpuRadixsort(alphaValuesP, tmpBucketP, alphaSortedIndiciesP, start+1, end);
-      // using sorted index array, change intersection locations in the array and neighbors
-      // printf("ssss %d %d %d\n", id, start, end);
-      // decending order JUST FOR TESING
-      // for(int i=start+1, j=end-1; i<end; ++i, j--){
-      // acending order of alpha values 
-      for(int i=start+1, j=start+1; i<end; ++i, j++){
-        alphaValuesP[i]=tmpBucketP[j];////////////////?????????????????????? need to swap alpha too!!!
-        // (x,y,alpha) tuple change in sorted order
-        intersectionsP[alphaSortedIndiciesP[j]*2]=intersectionsP2[i*2];
-        intersectionsP[alphaSortedIndiciesP[j]*2+1]=intersectionsP2[i*2+1];
-        //neighborMap update
-        // neighborMapP[alphaSortedIndiciesP[j]]=neighborMapP2[i];
-        //neighbor array update
-        neighborP[alphaSortedIndiciesP[j]]=neighborP2[i];
-        neighborQ[neighborP2[i]-1]=alphaSortedIndiciesP[j]+1; //+1 is the padding. When reading do -1
-        neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new originla to be used with sorted Q array
-      } 
-      // for(int i=start, j=end-1; i<end; ++i, --j){
-      //   printf("*(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], alphaSortedIndiciesP[j]);
-      // }
-    } 
-  }
-  // else{
-  //   int start=psQ2[pid], end=psQ2[pid+1];
-  //   // printf(".. %d %d %d\n", id, start+1, end);
-  //   // for(i=start; i<end; ++i){
-  //   //   printf("(%d %f %f %f %d) \n", id, intersectionsP[i*3], intersectionsP[i*3+1], intersectionsP[i*3+2], alphaValuesP[i]);
-  //   // }
-  //   // sort intersection vertices in this edge locally
-  //   if((end-start)>2){
-  //     gpuRadixsort(alphaValuesQ, tmpBucketQ, alphaSortedIndiciesQ, start+1, end);
-  //     // using sorted index array, change intersection locations in the array and neighbors
-  //     // printf("ssss %d %d %d\n", id, start, end);
-  //     // decending order JUST FOR TESING
-  //     // for(int i=start+1, j=end-1; i<end; ++i, j--){
-  //     // acending order of alpha values 
-  //     for(int i=start+1, j=start+1; i<end; ++i, j++){
-  //       alphaValuesQ[i]=tmpBucketQ[j];////////////////?????????????????????? need to swap alpha too!!!
-  //       // (x,y,alpha) tuple change in sorted order
-  //       intersectionsQ[alphaSortedIndiciesQ[j]*2]=intersectionsQ2[i*2];
-  //       intersectionsQ[alphaSortedIndiciesQ[j]*2+1]=intersectionsQ2[i*2+1];
-  //       //neighborMap update
-  //       // neighborMapQ[alphaSortedIndiciesQ[j]]=neighborMapQ2[i];
-  //       //neighbor array update
-  //       neighborQ[alphaSortedIndiciesQ[j]]=neighborQ2[i];
-  //       neighborP[neighborQ2[i]-1]=alphaSortedIndiciesQ[j]+1; //+1 is the padding. When reading do -1
-  //     } 
-  //     // for(int i=start, j=end-1; i<end; ++i, --j){
-  //     //   printf("****(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], alphaSortedIndiciesQ[j]);
-  //     // }
-  //   } 
-  // }
-  // --------------------------------------------------------------------------------------------
-}
-
-/*
------------------------------------------------------------------
-Function to calculate all intersections save them in the correct 
-  location using prefixsum arrays and make neighbor connections
-  Works with multiple components in PP and QQ
-Returns 
-  *intersection arrays with orginal vertices in them x2 (P and Q)
-  *neighbor arrays x2 (P and q)
-Runs in GPU
-Called from Host
--------------------------------------------------------------------
-*/
-__global__ void gpuCalculateIntersectionsMultiComp(
-                  double *polyPX, double *polyPY, 
-                  double *polyQX, double *polyQY, 
-                  int sizeP, int sizeQ, int *sizesPP, int *sizesQQ, int sizePP, int sizeQQ,
-                  int *psP1, int *psP2, int *psQ1, int *psQ2, 
-                  double *intersectionsP, double *intersectionsQ, double *intersectionsP2, double *intersectionsQ2,
-                  int *alphaValuesP, int *alphaValuesQ, int *tmpBucketP, int *tmpBucketQ, int *alphaSortedIndiciesP, int *alphaSortedIndiciesQ,
-                  int *neighborP, int *neighborQ, int *neighborP2, int *neighborQ2,
-                  int *neighborMapP, int *neighborMapQ, int *neighborMapP2, int *neighborMapQ2,
-                  int *initLabelsQ){
-  int id=blockDim.x*blockIdx.x+threadIdx.x;
-  double alpha;
-  double beta;
-  point I;
-  int count1=0, count2=0, nonDegenCount=0, size=sizeQ, indexIntP, indexIntQ, start, end, localI, neighborQId;
-  double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
-  int *sizes1=sizesPP, *sizes2=sizesQQ, pols1=sizePP, pols2=sizeQQ, poly1Id, poly2Id, qid2, pid2;
-
-  if(id>=sizeP+sizeQ) return;
-
-  point P1, P2, Q1, Q2;
-  int pid=id;
-  if(id>=sizeP){
-    size=sizeP;
-    pols1=sizeQQ;
-    pols2=sizePP;
-    sizes1=sizesQQ;
-    sizes2=sizesPP;
-    poly1X=polyQX; 
-    poly1Y=polyQY; 
-    poly2X=polyPX;
-    poly2Y=polyPY;
-    pid=id-sizeP;
-    intersectionsQ[psQ2[pid]*2]=poly1X[pid];       //consider edge for the intersection array
-    intersectionsQ[psQ2[pid]*2+1]=poly1Y[pid];
-    // intersectionsQ[psQ2[pid]*3+2]=-100;     //alpha value define it is a parent, not intersection
-    intersectionsQ2[psQ2[pid]*2]=poly1X[pid];       //consider edge for the intersection array
-    intersectionsQ2[psQ2[pid]*2+1]=poly1Y[pid];
-    alphaValuesQ[psQ2[pid]]=-100;
-    // neighborMapQ[psQ2[pid]+count2]=-100;    //default neighbor value. No neighbor
-    // neighborMapQ2[psQ2[pid]+count2]=-100;    //default neighbor value. No neighbor
-    // printf("id %d loc %d x:%f y:%f\n", id, psQ2[pid], intersectionsQ[psQ2[pid]*3], intersectionsQ[psQ2[pid]*3+1]);
-    indexIntQ=getIntersectionStartIndex(pid, psQ1);
-  } else {
-    intersectionsP[psP2[pid]*2]=poly1X[pid];       //consider edge for the intersection array
-    intersectionsP[psP2[pid]*2+1]=poly1Y[pid];
-    // intersectionsP[psP2[pid]*3+2]=-100;
-    
-    intersectionsP2[psP2[pid]*2]=poly1X[pid];       //consider edge for the intersection array
-    intersectionsP2[psP2[pid]*2+1]=poly1Y[pid];
-    alphaValuesP[psP2[pid]]=-100;
-    // neighborMapP[psP2[pid]+count2]=-100;    //default neighbor value. No neighbor
-    // neighborMapP2[psP2[pid]+count2]=-100;    //default neighbor value. No neighbor
-    // printf("id %d loc %d x:%f y:%f\n", id, psP2[pid], intersectionsP[psP2[pid]*3], intersectionsP[psP2[pid]*3+1]);
-    indexIntP=getIntersectionStartIndex(pid, psP1);
-  }
-
-  for(int qid=0; qid<size; qid++){
-    poly1Id=gpuBinarySearch(sizes1, pols1, pid);
-    poly2Id=gpuBinarySearch(sizes2, pols2, qid);
-    P1.x = poly1X[pid];
-    P1.y = poly1Y[pid];
-    Q1.x = poly2X[qid];
-    Q1.y = poly2Y[qid];
-
-    pid2=gpuGetVertex2Index(pid, sizes1, poly1Id);
-    qid2=gpuGetVertex2Index(qid, sizes2, poly2Id);
-    // if (id<24) printf("point 2 id %d %d %d \n", qid, qid2, poly1Id);
-    P2.x = poly1X[pid2];
-    P2.y = poly1Y[pid2];
-    Q2.x = poly2X[qid2];
-    Q2.y = poly2Y[qid2];
 
     //
     // determine intersection or overlap type
@@ -1757,19 +1239,19 @@ void calculateIntersectionsMultipleComponents(
   double *dev_polyPX, *dev_polyPY, *dev_polyQX, *dev_polyQY;
   int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2;
   int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
-  int *dev_sizesPP, *dev_sizesQQ;
 
-  // printf("\nP ");
-  // for (int i = 0; i < sizeP; ++i){
-  // // for (int i = 0; i < 15+1; ++i){
-  //   printf(" %d-%f,%f \n", i, polyPX[i], polyPY[i]);
-  // }
-  // printf("--- \nQ ");
-  // for (int i = 0; i < sizeQ; ++i){
-  // // for (int i = 0; i < 15+1; ++i){
-  //   printf(" %d-%f,%f\n ", i, polyQX[i], polyQY[i]);
-  // }
-  // printf("\n");
+  
+  printf("\nP ");
+  for (int i = 0; i < sizeP; ++i){
+  // for (int i = 0; i < 15+1; ++i){
+    printf(" %d-%f,%f \n", i, polyPX[i], polyPY[i]);
+  }
+  printf("--- \nQ ");
+  for (int i = 0; i < sizeQ; ++i){
+  // for (int i = 0; i < 15+1; ++i){
+    printf(" %d-%f,%f\n ", i, polyQX[i], polyQY[i]);
+  }
+  printf("\n");
   // Phase1: Count intersections in each block. Create prefix sums to find local locations in each thread 
   // Allocate memory in device 
   cudaMalloc((void **) &dev_polyPX, sizeP*sizeof(double));
@@ -1780,16 +1262,12 @@ void calculateIntersectionsMultipleComponents(
   cudaMalloc((void **) &dev_psP2, (sizeP+1)*sizeof(int));
   cudaMalloc((void **) &dev_psQ1, (sizeQ+1)*sizeof(int));
   cudaMalloc((void **) &dev_psQ2, (sizeQ+1)*sizeof(int));
-  cudaMalloc((void **) &dev_sizesPP, (sizePP+1)*sizeof(int));
-  cudaMalloc((void **) &dev_sizesQQ, (sizeQQ+1)*sizeof(int));
 
   // Copy input vectors from host memory to GPU buffers.
   cudaMemcpy(dev_polyPX, polyPX, sizeP*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_polyPY, polyPY, sizeP*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_polyQX, polyQX, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_polyQY, polyQY, sizeQ*sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(dev_sizesPP, sizesPP, (sizePP+1)*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(dev_sizesQQ, sizesQQ, (sizeQQ+1)*sizeof(int), cudaMemcpyHostToDevice);
 
   // int threadsPerBlock = 2;
   // int blocksPerGrid = (2*(sizeP+sizeQ) + threadsPerBlock - 1) / threadsPerBlock;
@@ -1799,10 +1277,10 @@ void calculateIntersectionsMultipleComponents(
   dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1), dimGrid(xblocksPerGrid, 1, 1); 
   printf("blockDim %d gridDim %d\n", dimBlock.x, dimGrid.x);
 
-  gpuCountIntersectionsMultiComp<<<dimGrid, dimBlock>>>(
+  gpuCountIntersections<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
-        sizeP, sizeQ, dev_sizesPP, dev_sizesQQ, sizePP, sizeQQ,
+        sizeP, sizeQ, 
         dev_psP1, dev_psP2, dev_psQ1, dev_psQ2);
 
   cudaMemcpy(&psP1, dev_psP1, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
@@ -1816,12 +1294,12 @@ void calculateIntersectionsMultipleComponents(
   thrust::exclusive_scan(thrust::host, psQ2, psQ2 + sizeQ+1, psQ2);
 
   printf("\nsizesPP ");
-  for (int i = 0; i < sizePP+1; ++i){
+  for (int i = 0; i < sizePP; ++i){
   // for (int i = 0; i < 15+1; ++i){
     printf(" %d-%d ", i, sizesPP[i]);
   }
   printf("--- \nsizesQQ ");
-  for (int i = 0; i < sizeQQ+1; ++i){
+  for (int i = 0; i < sizeQQ; ++i){
   // for (int i = 0; i < 15+1; ++i){
     printf(" %d-%d ", i, sizesQQ[i]);
   }
@@ -1842,15 +1320,18 @@ void calculateIntersectionsMultipleComponents(
   //Phase2: NEW- Fill neighborMap
   int *dev_neighborMapP, *dev_neighborMapQ;
   int countNonDegenIntP, countNonDegenIntQ;
+  int count=0;
   for(int i=0; i<sizePP; ++i){
-    countNonDegenIntArrayP[i]=psP2[sizesPP[i+1]];
+    count+=sizesPP[i];
+    countNonDegenIntArrayP[i]=psP2[count];
   }
+  count=0;
   for(int i=0; i<sizeQQ; ++i){
-    countNonDegenIntArrayQ[i]=psQ2[sizesQQ[i+1]];
+    count+=sizesQQ[i];
+    countNonDegenIntArrayQ[i]=psQ2[count];
   }
   countNonDegenIntP=psP2[sizeP];
   countNonDegenIntQ=psQ2[sizeQ];
-  printf("*****--- \n");
 
   *neighborMapP=(int *)malloc(countNonDegenIntP*sizeof(int));
   *neighborMapQ=(int *)malloc(countNonDegenIntQ*sizeof(int));
@@ -1863,10 +1344,10 @@ void calculateIntersectionsMultipleComponents(
   cudaMemcpy(dev_psQ1, psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_psQ2, psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
 
-  gpuNeighborMapMultiComp<<<dimGrid, dimBlock>>>(
+  gpuNeighborMap<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
-        sizeP, sizeQ,  dev_sizesPP, dev_sizesQQ, sizePP, sizeQQ,
+        sizeP, sizeQ,  
         dev_psP2, dev_psQ2,
         dev_neighborMapP, dev_neighborMapQ);
   
@@ -1918,10 +1399,10 @@ void calculateIntersectionsMultipleComponents(
   cudaMalloc((void **) &dev_neighborMapQ2, countNonDegenIntQ*sizeof(int));
   cudaMalloc((void **) &dev_initLabelsQ, countNonDegenIntQ*sizeof(int));
 
-  gpuCalculateIntersectionsMultiComp<<<dimGrid, dimBlock>>>(
+  gpuCalculateIntersections<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
-        sizeP, sizeQ, dev_sizesPP, dev_sizesQQ, sizePP, sizeQQ,
+        sizeP, sizeQ, 
         dev_psP1, dev_psP2, dev_psQ1, dev_psQ2, 
         dev_intersectionsP, dev_intersectionsQ, dev_intersectionsP2, dev_intersectionsQ2,
         dev_alphaValuesP, dev_alphaValuesQ, dev_tmpBucketP, dev_tmpBucketQ, dev_alphaSortedIndiciesP, dev_alphaSortedIndiciesQ,

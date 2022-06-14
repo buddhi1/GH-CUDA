@@ -53,13 +53,17 @@ ERROR
 
 2. Found some errors in Init label. 
     REASONS: Still neighbor connection could be broken. Not sure yet
-    PROGRESS: in progress
+    FIX:   
+        count2 updated was not made in the (id>=sizeP) section
+        sorted alpha issue fixed
+        sorted neighbors need a barrier. Currently, 2 kernel calls used as the fix. Not optimized
+    PROGRESS: Issue fixed
 
 TO DO CODE
 1. Shared memory usage
 2. CMBR filter using GPU
 3. Point-in-polygon test GPU
-4. manage when size of PP or QQ >0
+4. manage when size of PP or QQ >0 >>>> WORKING ON THIS
 5. Sice we have neighbor map and exact locations of neighbor location in the array, we should
     be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
     removing seperate section for Q info handling. 
