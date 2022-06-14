@@ -260,12 +260,12 @@ Function to get a given double value within tolerance
 Runs in GPU
 Called from Device
 -------------------------------------------------------------------
-*/
-__device__ double getValueTolarence(double val){
-  if(val<EPSILON)
-    return 0.0;
-  return val;
-}
+*/ //**************************** WRONG FUNCTION. Need to do it in a different way ************
+// __device__ double getValueTolarence(double val){
+//   if(val<EPSILON)
+//     return 0.0;
+//   return val;
+// }
 
 /*
 -----------------------------------------------------------------
@@ -526,6 +526,8 @@ __global__ void gpuCountIntersectionsMultiComp(
     Q1.x = poly2X[qid];
     Q1.y = poly2Y[qid];
 
+    // if(id==0) printf("p1 %f %f\n", P1.x, P1.y);
+
     pid2=gpuGetVertex2Index(pid, sizes1, poly1Id);
     qid2=gpuGetVertex2Index(qid, sizes2, poly2Id);
     // if (id<24) printf("point 2 id %d %d %d \n", qid, qid2, poly1Id);
@@ -541,8 +543,8 @@ __global__ void gpuCountIntersectionsMultiComp(
       if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
         count2++;
     }
-    // if(id==23)
-      // printf("id %d count1 %d count2  %d P(%f,%f)(%f,%f) Q(%f,%f)(%f,%f) %d\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, i);
+    // if(i!=0)
+    //   printf("id %d P(%f,%f)(%f,%f) Q(%f,%f)(%f,%f) %d\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, i);
   }
   count2++; //represent the parent vertex 
   if(id<sizeP){
@@ -728,10 +730,10 @@ __global__ void gpuNeighborMapMultiComp(
       else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
         count2=0;
       if(id<sizeP){
-        // if(pid<35) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
+        // if(pid<35) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, (psP2[pid]+count2), qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapP[psP2[pid]+count2]=qid;
       }else{
-        // if(pid<35) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
+        // if(id<70 && id>50) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
         neighborMapQ[psQ2[pid]+count2]=qid;
       }
     }
@@ -798,6 +800,7 @@ __global__ void gpuCalculateIntersections(
     // neighborMapP[psP2[pid]+count2]=-100;    //default neighbor value. No neighbor
     // neighborMapP2[psP2[pid]+count2]=-100;    //default neighbor value. No neighbor
     // printf("id %d loc %d x:%f y:%f\n", id, psP2[pid], intersectionsP[psP2[pid]*3], intersectionsP[psP2[pid]*3+1]);
+    // printf("// Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, I.x, I.y);
     indexIntP=getIntersectionStartIndex(pid, psP1);
   }
 
@@ -835,7 +838,9 @@ __global__ void gpuCalculateIntersections(
     // IntersectionType i = intersect(edgeP, edgeQ, alpha, beta);
     int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
     // if(i!=0){
-    //   printf("%d %d (%f,%f) %d(%f,%f) %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, i);
+    //   // printf("%d %d (%f,%f) %d(%f,%f) %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, i);
+    //   printf("id %d P(%f,%f)(%f,%f) Q(%f,%f)(%f,%f) %d\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, i);
+
     // }
     if(i && id<sizeP){
       count1++;
@@ -870,9 +875,10 @@ __global__ void gpuCalculateIntersections(
         // case X_INTERSECTION:
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
+          // I.x=getValueTolarence(I.x);
+          // I.y=getValueTolarence(I.y);
           // printf("* %d %d %d %d %f %f\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2, I.x, I.y);
+          // printf("* Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, I.x, I.y);
           intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsP[(psP2[pid]+count2)*2+1]=I.y;
           intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
@@ -882,6 +888,7 @@ __global__ void gpuCalculateIntersections(
         // X-overlap
         case 5:
           // printf("** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
+          // printf("** Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, Q1.x, Q1.y);
           intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
           intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
@@ -900,6 +907,7 @@ __global__ void gpuCalculateIntersections(
         case 3:
         case 7:
           // printf("*** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
+          // printf("*** Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, Q1.x, Q1.y);
           intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
           intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
@@ -936,8 +944,8 @@ __global__ void gpuCalculateIntersections(
         // case X_INTERSECTION:
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
+          // I.x=getValueTolarence(I.x);
+          // I.y=getValueTolarence(I.y);
           // printf("/* %d %d %d %d %f %f\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2, I.x, I.y);
           intersectionsQ[(psQ2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsQ[(psQ2[pid]+count2)*2+1]=I.y;
@@ -1159,17 +1167,38 @@ __global__ void gpuCalculateIntersectionsMultiComp(
 
       start=psQ2[neighborMapP[psP2[pid]+count2]];
       end=psQ2[neighborMapP[psP2[pid]+count2]+1];
-      // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
-      // local search to find the index of qid
-      for(localI=start; localI<end; ++localI){
-        if(pid==neighborMapQ[localI]){
-          neighborQId=localI;
-          // if(pid<35) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
-          neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          localI=end+2; // break;
+      if(i!=5){
+        // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
+        // local search to find the index of qid
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            localI=end+2; // break; 
+          }
+        }
+      }else{
+        neighborQId=start;
+        neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ2[neighborQId]=psP2[pid]+count2+1;
+        if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+        
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid], neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            localI=end+2; // break; 
+          }
         }
       }
 
@@ -1177,9 +1206,10 @@ __global__ void gpuCalculateIntersectionsMultiComp(
         // case X_INTERSECTION:
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
+          // I.x=getValueTolarence(I.x);
+          // I.y=getValueTolarence(I.y);
           // printf("* %d %d %d %d %f %f\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2, I.x, I.y);
+          printf("* P(%f, %f) Q(%f, %f) I(%f, %f)\n", P1.x, P1.y, Q1.x, Q1.y, I.x, I.y);
           intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsP[(psP2[pid]+count2)*2+1]=I.y;
           intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
@@ -1189,17 +1219,20 @@ __global__ void gpuCalculateIntersectionsMultiComp(
         // X-overlap
         case 5:
           // printf("** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
+          printf("** P(%f, %f) Q(%f, %f) I(%f, %f)\n", P1.x, P1.y, Q1.x, Q1.y, Q1.x, Q1.y);
           intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
           intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
           alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+          alphaValuesP[psP2[pid]]=0;
           break;
         // case T_INTERSECTION_Q:
         // case T_OVERLAP_Q:
         case 2:
         case 6:
           // intersectionsP[psP2[pid]*3+2]=alpha;          //***** error prone. Did not checked in depth
+          printf("*** P(%f, %f) Q(%f, %f) I(%f, %f)\n", P1.x, P1.y, Q1.x, Q1.y, I.x, I.y);
           alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
         break;
         // case T_INTERSECTION_P:
@@ -1207,6 +1240,7 @@ __global__ void gpuCalculateIntersectionsMultiComp(
         case 3:
         case 7:
           // printf("*** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
+          printf("**** P(%f, %f) Q(%f, %f) I(%f, %f)\n", P1.x, P1.y, Q1.x, Q1.y, Q1.x, Q1.y);
           intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
           intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
@@ -1218,6 +1252,7 @@ __global__ void gpuCalculateIntersectionsMultiComp(
         case 4:
         case 8:
           // printf("%d %d (%f,%f) %d(%f,%f) [%d %d %d] %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, (psP2[pid]+count2), indexIntP, count1-1, i);
+          printf("***** P(%f, %f) Q(%f, %f) I(%f, %f)\n", P1.x, P1.y, Q1.x, Q1.y, I.x, I.y);
           alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
           break;
       } 
@@ -1243,8 +1278,8 @@ __global__ void gpuCalculateIntersectionsMultiComp(
         // case X_INTERSECTION:
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-          I.x=getValueTolarence(I.x);
-          I.y=getValueTolarence(I.y);
+          // I.x=getValueTolarence(I.x);
+          // I.y=getValueTolarence(I.y);
           // printf("/* %d %d %d %d %f %f\n", (psQ2[pid]+count2), indexIntQ, count1-1, psQ2[pid]+count2, I.x, I.y);
           intersectionsQ[(psQ2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsQ[(psQ2[pid]+count2)*2+1]=I.y;
@@ -1260,6 +1295,7 @@ __global__ void gpuCalculateIntersectionsMultiComp(
           intersectionsQ2[(psQ2[pid]+count2)*2]=Q1.x;    
           intersectionsQ2[(psQ2[pid]+count2)*2+1]=Q1.y;
           alphaValuesQ[psQ2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*beta;
+          alphaValuesQ[psQ2[pid]]=0;
           break;
         // case T_INTERSECTION_Q:
         // case T_OVERLAP_Q: 
@@ -1460,6 +1496,84 @@ __global__ void gpuCalculateInitLabel(
       initLabelsP[i]=tmpIniLabel;
       initLabelsQ[nId]=tmpIniLabel;
       // printf("%d %d (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n", i, nId, pM.x, pM.y, pP.x, pP.y, qM.x, qM.y, qP.x, qP.y);
+      // printf(">>> %d %d %d %d\n", i, qMType, qPType, getInitialLabel(qMType, qPType));
+    }
+  }
+}
+
+/*
+-----------------------------------------------------------------
+Function to calculate initial label
+Returns 
+  *initial labels x2 (P and Q)
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
+*/
+__global__ void gpuCalculateInitLabelMultiComp(
+                int sizeP, int *psP2,
+                double *intersectionsP, double *intersectionsQ, int *alphaValuesP, 
+                int *neighborP,
+                int sizeNP, int sizeNQ, int *sizesNP, int *sizesNQ, int sizePP, int sizeQQ,
+                int *initLabelsP, int *initLabelsQ){
+  int id=blockDim.x*blockIdx.x+threadIdx.x;
+  int pid=id;
+  int poly1Id, poly2Id, size1, size2;
+  if(id>=sizeP) return;
+  int start=psP2[pid], end=psP2[pid+1];
+  // int start=psP2[id], end=psP2[id+1];
+  int tmpId, nId, pMNId, pPNId;
+  point pM, pP, qM, qP, current;
+  int qMType, qPType, tmpIniLabel;
+  int i;
+
+  for(i=start; i<end; i++){
+    poly1Id=gpuBinarySearch(sizesNP, sizePP, i);
+    size1=sizesNP[poly1Id+1]-sizesNP[poly1Id];
+
+    initLabelsP[i]=-100;
+    // if(intersectionsP[i*2+2]!=-100){    //consider intersections only
+    if(alphaValuesP[i]!=-100){    //consider intersections only
+      current.x=intersectionsP[i*2]; 
+      current.y=intersectionsP[i*2+1]; 
+      tmpId=getCircularId(i-1, size1);
+      // determine local configuration at this intersection vertex
+      pM.x=intersectionsP[tmpId*2];                // P-, predecessor of I on P
+      pM.y=intersectionsP[tmpId*2+1];                // P-, predecessor of I on P
+      // if(intersectionsP[tmpId*2+2]!=-100)
+      if(alphaValuesP[tmpId]!=-100)
+        // pMNId=getNeighborIndex(tmpId, neighborMapP, neighborQ); //get neighbor id of P_m vertex
+        pMNId=neighborP[tmpId]-1; //get neighbor id of P_m vertex
+      else pMNId=-100;
+
+      tmpId=getCircularId(i+1, size1);
+      pP.x=intersectionsP[tmpId*2];                // P+, successor of I on P
+      pP.y=intersectionsP[tmpId*2+1];                // P+, successor of I on P
+      // if(intersectionsP[tmpId*2+2]!=-100)
+      if(alphaValuesP[tmpId]!=-100)
+        // pPNId=getNeighborIndex(tmpId, neighborMapP, neighborQ); //get neighbor id of P_p vertex
+        pPNId=neighborP[tmpId]-1; //get neighbor id of P_p vertex
+      else pPNId=-100;
+
+      // nId=getNeighborIndex(i, neighborMapP, neighborQ);
+      nId=neighborP[i]-1;
+      poly2Id=gpuBinarySearch(sizesNQ, sizeQQ, nId);
+      size2=sizesNQ[poly2Id+1]-sizesNQ[poly2Id];
+
+      tmpId=getCircularId(nId-1, size2);
+      qM.x=intersectionsQ[tmpId*2];     // Q-, predecessor of I on Q
+      qM.y=intersectionsQ[tmpId*2+1];     // Q-, predecessor of I on Q
+      qMType=oracle(pMNId, pPNId, tmpId, qM, pM, current, pP);
+
+      tmpId=getCircularId(nId+1, size2);
+      qP.x=intersectionsQ[tmpId*2];     // Q+, successor of I on P
+      qP.y=intersectionsQ[tmpId*2+1];     // Q+, successor of I on P
+      qPType=oracle(pMNId, pPNId, tmpId, qP, pM, current, pP);
+
+      tmpIniLabel=getInitialLabel(qMType, qPType);
+      initLabelsP[i]=tmpIniLabel;
+      initLabelsQ[nId]=tmpIniLabel;
+      // printf("***---*** %d %d (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n", i, nId, pM.x, pM.y, pP.x, pP.y, qM.x, qM.y, qP.x, qP.y);
       // printf(">>> %d %d %d %d\n", i, qMType, qPType, getInitialLabel(qMType, qPType));
     }
   }
@@ -1937,19 +2051,26 @@ void calculateIntersectionsMultipleComponents(
         dev_neighborP, dev_neighborQ, dev_neighborQ2);
 
   // Phase4: Inital label classificaiton
+  int *dev_countNonDegenIntArrayP, *dev_countNonDegenIntArrayQ;
+  cudaMalloc((void **) &dev_countNonDegenIntArrayP, (sizePP)*sizeof(int));
+  cudaMalloc((void **) &dev_countNonDegenIntArrayQ, (sizeQQ)*sizeof(int));
   // cudaMemcpy(*initLabelsQ, dev_initLabelsQ, countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMalloc((void **) &dev_initLabelsP, countNonDegenIntP*sizeof(int));
   // cudaMemcpy(dev_initLabelsQ, *initLabelsQ, countNonDegenIntQ*sizeof(int), cudaMemcpyHostToDevice);
  
+  cudaMemcpy(dev_countNonDegenIntArrayP, countNonDegenIntArrayP, (sizePP)*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_countNonDegenIntArrayQ, countNonDegenIntArrayQ, (sizeQQ)*sizeof(int), cudaMemcpyHostToDevice);
+
   // negative alpha values are not handled explicitly since they are original vertices
   // ******No need to copy alpha values since they are only used to sort edge wise******
   // cudaMemcpy(alphaSortedIndicies, dev_alphaSortedIndicies, countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
 
-  gpuCalculateInitLabel<<<dimGrid, dimBlock>>>(
+  gpuCalculateInitLabelMultiComp <<<dimGrid, dimBlock>>>(
       sizeP,  dev_psP2,
       dev_intersectionsP, dev_intersectionsQ, dev_alphaValuesP,
       dev_neighborP,
-      countNonDegenIntP, countNonDegenIntQ, dev_initLabelsP, dev_initLabelsQ);
+      countNonDegenIntP, countNonDegenIntQ, dev_countNonDegenIntArrayP, dev_countNonDegenIntArrayQ, sizePP, sizeQQ,
+      dev_initLabelsP, dev_initLabelsQ);
 
   cudaMemcpy(*intersectionsP, dev_intersectionsP, countNonDegenIntP*2*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(*intersectionsQ, dev_intersectionsQ, countNonDegenIntQ*2*sizeof(double), cudaMemcpyDeviceToHost);
@@ -1965,17 +2086,31 @@ void calculateIntersectionsMultipleComponents(
   
   cudaDeviceSynchronize();
 
-  // int limitP=countNonDegenIntP;
-  // int limitQ=countNonDegenIntQ;
-  int limitP=10;
-  int limitQ=10;
+  int limitP=countNonDegenIntP;
+  int limitQ=countNonDegenIntQ;
+  // int limitP=10;
+  // int limitQ=10;
 
   printf("intersectionP");
   for (int i = 0; i < limitP*2; ++i){
-    if(i%2==0) 
+    if(i%2==0){ 
       printf("\n%d %d ", i/2, *(*alphaValuesP+(i/2)));
+      if(*(*neighborP+(i/2))!=0)
+        printf("%d (%f,%f) ", *(*neighborP+(i/2)), *(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2), *(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2+1));
+    }
     // printf(" %f ", intersectionsP[i]);
     printf(" %f ", *(*intersectionsP+i));
+  }
+  printf("\n\nintersectionP Error neighbors\n");
+  for (int i = 0; i < limitP*2; ++i){
+    if(i%2==0){ 
+      // printf("\n%d %d ", i/2, *(*alphaValuesP+(i/2)));
+      if(*(*neighborP+(i/2))!=0)
+        if(*(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2)!=(*(*intersectionsP+i)) && *(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2+1)!=(*(*intersectionsP+i+1)))
+          printf("%d (%f,%f) (%f,%f)\n ", *(*neighborP+(i/2)), *(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2), *(*intersectionsQ+ (*(*neighborP+(i/2))-1)*2+1), (*(*intersectionsP+i)), (*(*intersectionsP+i+1)));
+    }
+    // printf(" %f ", intersectionsP[i]);
+    // printf(" %f ", *(*intersectionsP+i));
   }
   printf("\n\nintersectionQ");
   for (int i = 0; i < limitQ*2; ++i){

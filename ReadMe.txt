@@ -57,7 +57,7 @@ ERROR
         count2 updated was not made in the (id>=sizeP) section
         sorted alpha issue fixed
         sorted neighbors need a barrier. Currently, 2 kernel calls used as the fix. Not optimized
-    PROGRESS: Issue fixed
+    PROGRESS: fixed
 
 TO DO CODE
 1. Shared memory usage

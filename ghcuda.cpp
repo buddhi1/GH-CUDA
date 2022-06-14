@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
       if(*(alphaValuesQ+(i/2))!=-100){ 
         V->intersection=true;
       }
-      // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
+      cout << i << "insert " << V->p.x << ", " << V->p.y << " " << V->alpha << endl;
       i+=2;
       V=current->next;
     }while(V->p.x!=QQ[polyId].root->p.x || V->p.y!=QQ[polyId].root->p.y);
@@ -195,7 +195,17 @@ int main(int argc, char* argv[])
     }
   }
   // -------------------------------------------------------------------------------------------
-
+  cout << "\nprint from QQ" << endl;
+  for(int polyId=0; polyId<sizeQQ; ++polyId){
+    cout << "poly " << polyId << endl;
+    for (vertex* V : QQ[polyId].vertices(ALL)){
+      // if(V->intersection)
+      //   cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+      // else
+        cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
+    }
+  }
+  cout <<"-------end " << endl;
   // -------------------------------------------------------------------------------------------
   // linking polygon P and Polygon Q with neighbor property
   // ******RULE: Each vertex will only have ONE NEIGHBOR
@@ -208,18 +218,26 @@ int main(int argc, char* argv[])
     V=PP[polyId].root;
     do{
       if(*(neighborP+i)!=0){
-        // for(polyId2=0; countNonDegenIntArrayQ[polyId2]<(*(neighborP+i)-1); ++polyId2);
-        polyId2=0;
+        for(polyId2=0; countNonDegenIntArrayQ[polyId2]<(*(neighborP+i)-1); ++polyId2);
+        // polyId2=0;
         VQ=QQ[polyId2].root;
         QQStart=0;
-        // if(polyId2>0) QQStart=countNonDegenIntArrayQ[polyId2-1];
-        cout << "=== " << (*(neighborP+i)-1) << " " << countNonDegenIntArrayQ[polyId2] << " " << QQStart << endl;
+        if(polyId2>0) QQStart=countNonDegenIntArrayQ[polyId2-1];
+        // cout << "=== " << (*(neighborP+i)-1) << " " << countNonDegenIntArrayQ[polyId2] << " " << QQStart << endl;
         for(j=QQStart; j<(*(neighborP+i)-1); ++j){
           VQ=VQ->next;
+          if(VQ->p.x==QQ[polyId2].root->p.x && VQ->p.y==QQ[polyId2].root->p.y){
+            VQ=QQ[++polyId2].root;
+          }
         }
         V->neighbour=VQ;
         VQ->neighbour=V;
-        if(i<35) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << "-" << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
+        if(V->p.x!=VQ->p.x || V->p.y!=VQ->p.y){
+          cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " <> " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
+
+          //  cout << (V->p.x!=VQ->p.x) << " wrong Neigh " << i << " " << j << " "<<  (V->p.y!=VQ->p.y) << endl; 
+        }
+        // if(i<35) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " - " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
       }
       V=V->next;
       ++i;
@@ -237,11 +255,13 @@ int main(int argc, char* argv[])
   //   cout << " " << *(intersectionsP+i) << " ";
   // }
   cout << "\nprint from PP" << endl;
-  for (vertex* V : PP[0].vertices(ALL)){
-    if(V->intersection)
-      cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
-    else
-      cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" " << V->label << endl;
+  for(int polyId=0; polyId<sizePP; ++polyId){
+    for (vertex* V : PP[polyId].vertices(ALL)){
+      if(V->intersection)
+        cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+      else
+        cout << V->p.x << ", " << V->p.y << /*" " << V->alpha << */" " << V->label << endl;
+    }
   }
 
   // cout << "\ncount degen " << countNonDegenIntQ << endl;
@@ -251,11 +271,13 @@ int main(int argc, char* argv[])
   //   cout << " " << *(intersectionsQ+i) << " ";
   // }
   cout << "\nprint from QQ" << endl;
-  for (vertex* V : QQ[0].vertices(ALL)){
-    if(V->intersection)
-      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
-    else
-      cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
+  for(int polyId=0; polyId<sizeQQ; ++polyId){
+    for (vertex* V : QQ[polyId].vertices(ALL)){
+      if(V->intersection)
+        cout << V->p.x << ", " << V->p.y << " " << /*V->alpha << */" **" << V->label << "** -> " << V->neighbour->p.x << ", " << V->neighbour->p.y << endl;
+      else
+        cout << V->p.x << ", " << V->p.y << " " << /*V->alpha <<*/ " " << V->label << " " << V->intersection << endl;
+    }
   }
   // -------------------------------------------------------------------------------------------
 
