@@ -213,6 +213,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // ******RULE: Each vertex will only have ONE NEIGHBOR
   // -------------------------------------------------------------------------------------------
   // cout << "\n\n-----------\n";
+  int count=0;
   V=PP[0].root;
   vertex *VQ=QQ[0].root;
   j=0;
@@ -225,7 +226,13 @@ void regularPolygonHandler(int argc, char* argv[]){
       }
       V->neighbour=VQ;
       VQ->neighbour=V;
-      // if(i<35) cout << "neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << "-" << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
+      if(V->label==(IntersectionLabel)(2)){
+        V->label=(IntersectionLabel)(1);
+        VQ->label=(IntersectionLabel)(1);
+      }
+
+      // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
+        cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
     }
     V=V->next;
     ++i;

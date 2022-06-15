@@ -204,6 +204,7 @@ __device__ int oracle(int pMNId, int pPNId, int qId, const point& Q, const point
   double s1 = A(Q, P1, P2);
   double s2 = A(Q, P2, P3);
   double s3 = A(P1, P2, P3);
+  // printf("(%f %f) (%f %f) %f %f %f (%f %f) \n", Q.x, Q.y, P1.x, P1.y, s1, s2, s3, P2.x, P2.y);
   if(s3>0){ 
     // chain makes a left turn
     if (s1>0 && s2>0)
@@ -859,20 +860,61 @@ __global__ void gpuCalculateIntersections(
       end=psQ2[neighborMapP[psP2[pid]+count2]+1];
       // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
       // local search to find the index of qid
-      for(localI=start; localI<end; ++localI){
-        if(pid==neighborMapQ[localI]){
-          neighborQId=localI;
-          // if(pid<35) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
-          neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-          localI=end+2; // break;
+      // for(localI=start; localI<end; ++localI){
+      //   if(pid==neighborMapQ[localI]){
+      //     neighborQId=localI;
+      //     // if(pid<35) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+      //     neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+      //     neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+      //     neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+      //     neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+      //     localI=end+2; // break;
+      //   }
+      // }
+
+
+
+      if(i!=5){
+        // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
+        // local search to find the index of qid
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            localI=end+2; // break; 
+          }
+        }
+      }else{
+        neighborQId=start;
+        neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ2[neighborQId]=psP2[pid]+count2+1;
+        if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+        
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid], neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            localI=end+2; // break; 
+          }
         }
       }
 
+
+
+
       switch(i) {
         // case X_INTERSECTION:
+        // I and I
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
           // I.x=getValueTolarence(I.x);
@@ -886,6 +928,8 @@ __global__ void gpuCalculateIntersections(
           alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
           break;
         // X-overlap
+        // P1 and I(=P1 I is in Q)
+        // I(=Q1 I is in P) and Q1
         case 5:
           // printf("** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
           // printf("** Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, Q1.x, Q1.y);
@@ -897,6 +941,7 @@ __global__ void gpuCalculateIntersections(
           break;
         // case T_INTERSECTION_Q:
         // case T_OVERLAP_Q:
+        // P1 and I(=P1 is in Q)
         case 2:
         case 6:
           // intersectionsP[psP2[pid]*3+2]=alpha;          //***** error prone. Did not checked in depth
@@ -904,6 +949,7 @@ __global__ void gpuCalculateIntersections(
         break;
         // case T_INTERSECTION_P:
         // case T_OVERLAP_P:
+        // I(=Q1 is in P) and Q1
         case 3:
         case 7:
           // printf("*** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
@@ -916,6 +962,7 @@ __global__ void gpuCalculateIntersections(
           break;
         // case V_INTERSECTION:
         // case V_OVERLAP:
+        // P1 and Q1
         case 4:
         case 8:
           // printf("%d %d (%f,%f) %d(%f,%f) [%d %d %d] %d\n", id, pid, P1.x, P1.y, qid, Q1.x, Q1.y, (psP2[pid]+count2), indexIntP, count1-1, i);
@@ -1019,7 +1066,7 @@ __global__ void gpuCalculateIntersections(
         //neighbor array update
         neighborP[alphaSortedIndiciesP[j]]=neighborP2[i];
         neighborQ[neighborP2[i]-1]=alphaSortedIndiciesP[j]+1; //+1 is the padding. When reading do -1
-        neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new originla to be used with sorted Q array
+        neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new original to be used with sorted Q array
       } 
       // for(int i=start, j=end-1; i<end; ++i, --j){
       //   printf("*(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], alphaSortedIndiciesP[j]);
@@ -1629,7 +1676,7 @@ void calculateIntersections(
   // int blocksPerGrid = (2*(sizeP+sizeQ) + threadsPerBlock - 1) / threadsPerBlock;
   // dim3 dimBlock(threadsPerBlock, 1, 1), dimGrid(blocksPerGrid, 1, 1);   
   int xblocksPerGrid = (2*(sizeP+sizeQ) + xThreadPerBlock - 1) / xThreadPerBlock;
-  int yblocksPerGrid = (2*(sizeP+sizeQ) + yThreadPerBlock - 1) / yThreadPerBlock;
+  // int yblocksPerGrid = (2*(sizeP+sizeQ) + yThreadPerBlock - 1) / yThreadPerBlock;
   dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1), dimGrid(xblocksPerGrid, 1, 1); 
   printf("blockDim %d gridDim %d\n", dimBlock.x, dimGrid.x);
 
@@ -1666,6 +1713,8 @@ void calculateIntersections(
   int *dev_neighborMapP, *dev_neighborMapQ;
   *countNonDegenIntP=psP2[sizeP];
   *countNonDegenIntQ=psQ2[sizeQ];
+
+  printf("degen count P %d *****--- Q %d\n", *countNonDegenIntP, *countNonDegenIntQ);
 
   *neighborMapP=(int *)malloc(*countNonDegenIntP*sizeof(int));
   *neighborMapQ=(int *)malloc(*countNonDegenIntQ*sizeof(int));
@@ -1712,6 +1761,8 @@ void calculateIntersections(
   *neighborP=(int *)malloc(*countNonDegenIntP*sizeof(int));
   *neighborQ=(int *)malloc(*countNonDegenIntQ*sizeof(int));
 
+  cudaDeviceSynchronize();
+
   // Allocate memory in device 
   cudaMalloc((void **) &dev_intersectionsP, *countNonDegenIntP*2*sizeof(double));
   cudaMalloc((void **) &dev_intersectionsP2, *countNonDegenIntP*2*sizeof(double));
@@ -1744,12 +1795,16 @@ void calculateIntersections(
         dev_neighborMapP, dev_neighborMapQ, dev_neighborMapP2, dev_neighborMapQ2,
         dev_initLabelsQ);
 
+  cudaDeviceSynchronize();
+
   gpuSortPolyQ<<<dimGrid, dimBlock>>>(
         sizeP, sizeQ, 
         dev_psQ2, 
         dev_intersectionsQ, dev_intersectionsQ2,
         dev_alphaValuesQ, dev_tmpBucketQ,  dev_alphaSortedIndiciesQ,
         dev_neighborP, dev_neighborQ, dev_neighborQ2);
+
+  cudaDeviceSynchronize();
 
   // Phase4: Inital label classificaiton
   // cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
@@ -1829,7 +1884,7 @@ void calculateIntersections(
   for (int i = 0; i < limitP; ++i){
     printf(" %d>%d ", i, *(*initLabelsP+i));
   }
-  printf("\nLable Q\n");
+  printf("\nLabel Q\n");
   for (int i = 0; i < limitQ; ++i){
     printf(" %d>%d ", i, *(*initLabelsQ+i));
   }
@@ -1964,7 +2019,7 @@ void calculateIntersectionsMultipleComponents(
   }
   countNonDegenIntP=psP2[sizeP];
   countNonDegenIntQ=psQ2[sizeQ];
-  printf("*****--- \n");
+  printf("degen count P %d *****--- Q %d\n", countNonDegenIntP, countNonDegenIntQ);
 
   *neighborMapP=(int *)malloc(countNonDegenIntP*sizeof(int));
   *neighborMapQ=(int *)malloc(countNonDegenIntQ*sizeof(int));

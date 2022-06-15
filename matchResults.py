@@ -2,8 +2,8 @@
 # Used to compare parallel output vs sequential to verify results
 import pandas as pd
 
-file1 = "results/Fig14-R.poly"
-file2 = "../2019-Clipping simple polygons with degenerate intersections/polyclip/Fig14-R.poly"
+file1 = "results/Fig-large-R.poly"
+file2 = "../2019-Clipping simple polygons with degenerate intersections/polyclip2/results/Fig-large-R.poly"
 df_file1 = pd.read_csv (file1,  sep=" ", header=None)
 df_file2 = pd.read_csv (file2,  sep=" ", header=None)
 
