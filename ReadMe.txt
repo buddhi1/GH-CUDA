@@ -21,6 +21,8 @@ usage:
 ./program data/Fig18-P.poly data/Fig18-Q.poly results/Fig18-R.poly
 ./program data/Fig19-P.poly data/Fig19-Q.poly results/Fig19-R.poly
 
+./program data/readPolygon/s.txt data/readPolygon/c.txt results/Fig-large-R.poly
+
 
 polyclip [-union] input1.poly input2.poly output.poly
 

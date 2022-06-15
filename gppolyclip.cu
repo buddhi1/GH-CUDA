@@ -439,7 +439,7 @@ __global__ void gpuCountIntersections(
         count2++;
     }
     // if(id==9 || id==0)
-      printf("id %d count1 %d count2  %d P(%f,%f) Q(%f,%f) %d\n", id, count1, count2, P1.x, P1.y, Q1.x, Q1.y, i);
+      // printf("id %d count1 %d count2  %d P(%f,%f) Q(%f,%f) %d\n", id, count1, count2, P1.x, P1.y, Q1.x, Q1.y, i);
 
   }
   count2++; //represent the parent vertex 

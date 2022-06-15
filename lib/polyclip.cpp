@@ -27,6 +27,7 @@ using namespace std;
 
 #include "point2D.h"
 #include "polygon.h"
+#include "readSCPolygon.h"
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -852,6 +853,35 @@ void savePolygon(vector<polygon>& PP, string s) {
 //
 ////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////
+//
+// save polygons to array
+//
+void gpc_read_polygon(FILE *fp, double **px, double **py, int *size, string polyName){
+  int v; 
+  point2D point;
+  polygon P;
+  fscanf(fp, "%d", size);
+
+  MALLOC(*px, *size*sizeof(double), "vertex x values", double);
+  MALLOC(*py, *size*sizeof(double), "vertex y values", double);
+          
+  for (v=0; v<*size; v++){
+    fscanf(fp, "%lf,%lf", (*px+v), (*py+v));
+    point.x=*(*px+v);
+    point.y=*(*py+v);
+    P.newVertex(point, true);
+    // printf(" %f %f, ", p->contour[0].vertex[v].x,
+    //                    p->contour[0].vertex[v].y );
+  }
+  P.numVertices=*size;
+  if(polyName=="PP") PP.push_back(P);
+  else QQ.push_back(P);
+  printf("Polygon with %d vertices reading completed!\n", *size);
+}
+
+//
+////////////////////////////////////////////////////////////////////////
 
 // int main(int argc, char* argv[])
 // {
