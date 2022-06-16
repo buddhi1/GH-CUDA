@@ -204,7 +204,7 @@ __device__ int oracle(int pMNId, int pPNId, int qId, const point& Q, const point
   double s1 = A(Q, P1, P2);
   double s2 = A(Q, P2, P3);
   double s3 = A(P1, P2, P3);
-  // printf("(%f %f) (%f %f) %f %f %f (%f %f) \n", Q.x, Q.y, P1.x, P1.y, s1, s2, s3, P2.x, P2.y);
+  // printf("Q(%f %f) P1(%f %f) P2(%f %f) P3(%f %f) %f %f %f\n", Q.x, Q.y, P1.x, P1.y, P2.x, P2.y, P3.x, P3.y, s1, s2, s3);
   if(s3>0){ 
     // chain makes a left turn
     if (s1>0 && s2>0)
@@ -654,6 +654,41 @@ __global__ void gpuNeighborMap(
         count2=0;
       if(id<sizeP){
         // if(pid<35) printf("#PPPP# %d %d %d (%f,%f - %f,%f)\n", pid, psP2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
+        // switch(i){
+        //   // case X_INTERSECTION:
+        //   // I and I
+        //   case 1:
+        //     neighborMapP[psP2[pid]+count2]=qid;
+        //     break;
+        //   // X-overlap
+        //   // P1 and I(=P1 I is in Q)
+        //   // I(=Q1 I is in P) and Q1
+        //   case 5:
+        //     neighborMapP[psP2[pid]]=qid;
+        //     neighborMapP[psP2[pid]+count2]=qid;
+        //     break;
+        //   // case T_INTERSECTION_Q:
+        //   // case T_OVERLAP_Q:
+        //   // P1 and I(=P1 is in Q)
+        //   case 2:
+        //   case 6:
+        //     neighborMapP[psP2[pid]]=qid;
+        //     break;
+        //   // case T_INTERSECTION_P:
+        //   // case T_OVERLAP_P:
+        //   // I(=Q1 is in P) and Q1
+        //   case 3:
+        //   case 7:
+        //     neighborMapP[psP2[pid]+count2]=qid;
+        //     break;
+        //   // case V_INTERSECTION:
+        //   // case V_OVERLAP:
+        //   // P1 and Q1
+        //   case 4:
+        //   case 8:
+        //     neighborMapP[psP2[pid]]=qid;
+        //     break;
+        // }
         neighborMapP[psP2[pid]+count2]=qid;
       }else{
         // if(pid<35) printf("#qqqq# %d %d %d (%f,%f - %f,%f)\n", pid, psQ2[pid]+count2, qid, P1.x, P1.y, Q1.x, Q1.y);
@@ -872,8 +907,6 @@ __global__ void gpuCalculateIntersections(
       //   }
       // }
 
-
-
       if(i!=5){
         // printf("***-----***** %d %d %d (%d %d)\n", i, neighborMapP[psP2[pid]+count2], pid, start, end);
         // local search to find the index of qid
@@ -884,7 +917,7 @@ __global__ void gpuCalculateIntersections(
             neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
             neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
             neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            // if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
             localI=end+2; // break; 
           }
         }
@@ -894,7 +927,7 @@ __global__ void gpuCalculateIntersections(
         neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
         neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
         neighborQ2[neighborQId]=psP2[pid]+count2+1;
-        if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
+        // if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid]+count2, neighborQId, start, neighborMapP[psP2[pid]+count2]);
         
         for(localI=start; localI<end; ++localI){
           if(pid==neighborMapQ[localI]){
@@ -903,7 +936,7 @@ __global__ void gpuCalculateIntersections(
             neighborP2[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
             neighborQ[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
             neighborQ2[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
-            if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid], neighborQId, start, neighborMapP[psP2[pid]+count2]);
+            // if(psP2[pid]+count2==33) printf("&&& %d %d (%d %d) %d %d\n", id, pid, psP2[pid], neighborQId, start, neighborMapP[psP2[pid]+count2]);
             localI=end+2; // break; 
           }
         }
@@ -917,8 +950,10 @@ __global__ void gpuCalculateIntersections(
         // I and I
         case 1:
           I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
+
           // I.x=getValueTolarence(I.x);
           // I.y=getValueTolarence(I.y);
+
           // printf("* %d %d %d %d %f %f\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2, I.x, I.y);
           // printf("* Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, I.x, I.y);
           intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
@@ -926,6 +961,11 @@ __global__ void gpuCalculateIntersections(
           intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsP2[(psP2[pid]+count2)*2+1]=I.y;
           alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+
+          // if(fabs(I.x-63127) <= EPSILON  && fabs(I.y-76009.7) <= EPSILON)
+          // if((psP2[pid]+count2) > 677 && (psP2[pid]+count2) < 682) 
+            // printf("* %d %d P(%f, %f) Q(%f, %f) I(%f, %f) %d %f\n", i, id, P1.x, P1.y, Q1.x, Q1.y, I.x, I.y, psP2[pid]+count2, alpha);
+
           break;
         // X-overlap
         // P1 and I(=P1 I is in Q)
@@ -945,6 +985,7 @@ __global__ void gpuCalculateIntersections(
         case 2:
         case 6:
           // intersectionsP[psP2[pid]*3+2]=alpha;          //***** error prone. Did not checked in depth
+          // printf("** %d %d P(%f, %f) Q(%f, %f) I(%f, %f)\n", i, id, P1.x, P1.y, Q1.x, Q1.y, P1.x, P1.y);
           alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
         break;
         // case T_INTERSECTION_P:
@@ -953,7 +994,7 @@ __global__ void gpuCalculateIntersections(
         case 3:
         case 7:
           // printf("*** %d %d %d %d\n", (psP2[pid]+count2), indexIntP, count1-1, psP2[pid]+count2);
-          // printf("*** Q(%f, %f) P(%f, %f) I(%f, %f)\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, Q1.x, Q1.y);
+          // printf("*** %d %d P(%f, %f) Q(%f, %f) I(%f, %f)\n", i, id, P1.x, P1.y, Q1.x, Q1.y, Q1.x, Q1.y);
           intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
           intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
           intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
@@ -980,6 +1021,9 @@ __global__ void gpuCalculateIntersections(
       else if(i==2 || i==4 || i==6 || i==8)
         count2=0;
 
+        // if((psQ2[pid]+count2) > 37320 && (psQ2[pid]+count2) < 37360) 
+          // printf("*/*/*/ %d %d P(%f, %f) Q(%f, %f) %d %d\n", i, id, P1.x, P1.y, Q1.x, Q1.y, psQ2[pid]+count2, count2);
+
         // if(i==1 || i==3 || i==5 || i==7)
         // // if(i==1 || i==2 || i==5 || i==6)
         //   count2++;
@@ -999,6 +1043,12 @@ __global__ void gpuCalculateIntersections(
           intersectionsQ2[(psQ2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
           intersectionsQ2[(psQ2[pid]+count2)*2+1]=I.y;
           alphaValuesQ[psQ2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+          
+          
+          // if((psQ2[pid]+count2) > 37330 && (psQ2[pid]+count2) < 37350) 
+          //   printf("**//%d %d %d P(%f, %f) Q(%f, %f) I(%f, %f) %d %d %f\n", count2, i, id, P1.x, P1.y, Q1.x, Q1.y, I.x, I.y, psQ2[pid]+count2, qid, alpha);
+
+          
           break;
         // case X_OVERLAP:
         case 5:
@@ -1026,6 +1076,7 @@ __global__ void gpuCalculateIntersections(
         // was 3, 7
         case 2:
         case 6:
+          // printf("/***8 %d %d %d %d\n", (psQ2[pid]), indexIntQ, count1-1, psQ2[pid]+count2);
           alphaValuesQ[psQ2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
         break;
         // case V_INTERSECTION:
@@ -1052,21 +1103,28 @@ __global__ void gpuCalculateIntersections(
     if((end-start)>2){
       gpuRadixsort(alphaValuesP, tmpBucketP, alphaSortedIndiciesP, start+1, end);
       // using sorted index array, change intersection locations in the array and neighbors
-      // printf("ssss %d %d %d\n", id, start, end);
+      // printf("from p ssss %d %d %d\n", id, start, end);
       // decending order JUST FOR TESING
       // for(int i=start+1, j=end-1; i<end; ++i, j--){
       // acending order of alpha values 
-      for(int i=start+1, j=start+1; i<end; ++i, j++){
+      // for(int i=start+1, j=start+1; i<end; i++, j++){
+      //   printf("pb %d %f %f %d Q[%d %d]P (%d)\n", i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], neighborP[i], neighborQ[neighborP2[i]-1], (neighborP2[i]-1));
+      // }
+      for(int i=start+1, j=start+1; i<end; i++, j++){
         alphaValuesP[i]=tmpBucketP[j];////////////////?????????????????????? need to swap alpha too!!!
         // (x,y,alpha) tuple change in sorted order
-        intersectionsP[alphaSortedIndiciesP[j]*2]=intersectionsP2[i*2];
-        intersectionsP[alphaSortedIndiciesP[j]*2+1]=intersectionsP2[i*2+1];
+        // intersectionsP[alphaSortedIndiciesP[j]*2]=intersectionsP2[i*2];
+        // intersectionsP[alphaSortedIndiciesP[j]*2+1]=intersectionsP2[i*2+1];
+        intersectionsP[i*2]=intersectionsP2[alphaSortedIndiciesP[j]*2];
+        intersectionsP[i*2+1]=intersectionsP2[alphaSortedIndiciesP[j]*2+1];
         //neighborMap update
         // neighborMapP[alphaSortedIndiciesP[j]]=neighborMapP2[i];
         //neighbor array update
-        neighborP[alphaSortedIndiciesP[j]]=neighborP2[i];
-        neighborQ[neighborP2[i]-1]=alphaSortedIndiciesP[j]+1; //+1 is the padding. When reading do -1
-        neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new original to be used with sorted Q array
+        neighborP[i]=neighborP2[alphaSortedIndiciesP[j]];
+        neighborQ[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //+1 is the padding. When reading do -1
+        // neighborQ2[neighborP2[i]-1]=neighborQ[neighborP2[i]-1]; //updates neighborQ2 as the new original to be used with sorted Q array
+        neighborQ2[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //updates neighborQ2 as the new original to be used with sorted Q array
+        // printf("ps %d %f %f %d Q[%d %d]P (%d)\n", i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], neighborP[i], neighborQ[neighborP2[alphaSortedIndiciesP[j]]-1], (neighborP2[alphaSortedIndiciesP[j]]-1));
       } 
       // for(int i=start, j=end-1; i<end; ++i, --j){
       //   printf("*(%d %d %f %f %d) reverse->%d \n", id, i, intersectionsP[i*2], intersectionsP[i*2+1], alphaValuesP[i], alphaSortedIndiciesP[j]);
@@ -1463,18 +1521,32 @@ __global__ void gpuSortPolyQ(
       gpuRadixsort(alphaValuesQ, tmpBucketQ, alphaSortedIndiciesQ, start+1, end);
       // using sorted index array, change intersection locations in the array and neighbors
       // printf("ssss %d %d %d\n", id, start, end);
+      // for(int ii=start+1; ii<end; ++ii)
+      //   printf("sorted %d ", alphaSortedIndiciesQ[ii]);
+      // printf("\n");
       // decending order JUST FOR TESING
       // for(int i=start+1, j=end-1; i<end; ++i, j--){
       // acending order of alpha values 
-      for(int i=start+1, j=start+1; i<end; ++i, j++){
+      // for(int i=start+1, j=start+1; i<end; i++, j++){
+      //   printf("b %d %f %f %d Q[%d %d]P (%d)\n", i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], neighborQ[i], neighborP[neighborQ2[i]-1], (neighborQ2[i]-1));
+      // }
+      for(int i=start+1, j=start+1; i<end; i++, j++){
+        // printf("b %d %f %f %d Q[%d %d]P (%d)\n", i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], neighborQ[i], neighborP[neighborQ2[i]-1], (neighborQ2[i]-1));
         alphaValuesQ[i]=tmpBucketQ[j];////////////////?????????????????????? need to swap alpha too!!!
         // (x,y,alpha) tuple change in sorted order
-        intersectionsQ[alphaSortedIndiciesQ[j]*2]=intersectionsQ2[i*2];
-        intersectionsQ[alphaSortedIndiciesQ[j]*2+1]=intersectionsQ2[i*2+1];
+        // intersectionsQ[alphaSortedIndiciesQ[j]*2]=intersectionsQ2[i*2];
+        // intersectionsQ[alphaSortedIndiciesQ[j]*2+1]=intersectionsQ2[i*2+1];
+        intersectionsQ[i*2]=intersectionsQ2[alphaSortedIndiciesQ[j]*2];
+        intersectionsQ[i*2+1]=intersectionsQ2[alphaSortedIndiciesQ[j]*2+1];
         //neighbor array update
-        neighborQ[alphaSortedIndiciesQ[j]]=neighborQ2[i];
-        neighborP[neighborQ2[i]-1]=alphaSortedIndiciesQ[j]+1; //+1 is the padding. When reading do -1
+        // neighborQ[alphaSortedIndiciesQ[j]]=neighborQ2[i];
+        // neighborP[neighborQ2[i]-1]=alphaSortedIndiciesQ[j]+1; //+1 is the padding. When reading do -1
+        neighborQ[i]=neighborQ2[alphaSortedIndiciesQ[j]];
+        neighborP[neighborQ2[alphaSortedIndiciesQ[j]]-1]=i+1; //+1 is the padding. When reading do -1 //[]= i+1
+        // printf("s %d %f %f %d Q[%d %d]P (%d)\n", i, intersectionsQ[i*2], intersectionsQ[i*2+1], alphaValuesQ[i], neighborQ[i], neighborP[neighborQ2[alphaSortedIndiciesQ[j]]-1], (neighborQ2[alphaSortedIndiciesQ[j]]-1));
       } 
+      // printf("s= %f %f %d %d %d\n", intersectionsQ[end*2], intersectionsQ[end*2+1], alphaValuesQ[end], neighborQ[end], neighborP[neighborQ2[end]-1]);
+
     } 
   }
 }
@@ -1538,6 +1610,7 @@ __global__ void gpuCalculateInitLabel(
       qP.x=intersectionsQ[tmpId*2];     // Q+, successor of I on P
       qP.y=intersectionsQ[tmpId*2+1];     // Q+, successor of I on P
       qPType=oracle(pMNId, pPNId, tmpId, qP, pM, current, pP);
+      // printf("testafter %d %d %d %d\n", i, nId, tmpId, getCircularId(nId-1, sizeNQ));
 
       tmpIniLabel=getInitialLabel(qMType, qPType);
       initLabelsP[i]=tmpIniLabel;
@@ -1863,7 +1936,8 @@ void calculateIntersections(
   // }
   // printf("\n");
   printf("\nneighbor P\n");
-  for (int i = 0; i < limitP; ++i){
+  // for (int i = 0; i < limitP; ++i){
+  for (int i = 679; i < 682; ++i){
     printf(" %d-%d ", i, *(*neighborP+i));
   }
   printf("\nnneighbor Q\n");

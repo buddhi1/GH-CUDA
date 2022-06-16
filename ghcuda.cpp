@@ -27,22 +27,23 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Alternate 1 -> PHASE:1 read input polygons
   // -------------------------------------------------------------------------------------------
-  double *polyPX;
-  double *polyPY;
-  double *polyQX;
-  double *polyQY;
+  // double *polyPX;
+  // double *polyPY;
+  // double *polyQX;
+  // double *polyQY;
 
-  FILE *pfile, *qfile;
-  pfile=fopen(argv[argn++], "r");
-  qfile=fopen(argv[argn++], "r");
-  gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
-  gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
+  // FILE *pfile, *qfile;
+  // pfile=fopen(argv[argn++], "r");
+  // qfile=fopen(argv[argn++], "r");
+  // gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
+  // gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
 
   // -------------------------------------------------------------------------------------------
   // Alternate 2 -> PHASE:1 read input polygons
   // -------------------------------------------------------------------------------------------
-  /*cout << "\nP "; loadPolygon(PP,string(argv[argn]));
-  cout <<   "Q "; loadPolygon(QQ,string(argv[argn+1]));
+  // /*
+  cout << "\nP "; loadPolygon(PP,string(argv[argn++]));
+  cout <<   "Q "; loadPolygon(QQ,string(argv[argn++]));
   // -------------------------------------------------------------------------------------------
   
   // -------------------------------------------------------------------------------------------
@@ -83,7 +84,8 @@ void regularPolygonHandler(int argc, char* argv[]){
     polyQX[i] = V->p.x;
     polyQY[i++] = V->p.y;
 	  // cout << "--- " << setprecision (15) << V->p.x << endl;
-	}*/
+	}
+  // */
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
@@ -226,13 +228,8 @@ void regularPolygonHandler(int argc, char* argv[]){
       }
       V->neighbour=VQ;
       VQ->neighbour=V;
-      if(V->label==(IntersectionLabel)(2)){
-        V->label=(IntersectionLabel)(1);
-        VQ->label=(IntersectionLabel)(1);
-      }
-
       // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
-        cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
+        // cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
     }
     V=V->next;
     ++i;
