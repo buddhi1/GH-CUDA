@@ -1,8 +1,11 @@
 #include <iostream>
 #include<bits/stdc++.h>
+#include <chrono>
 
 #include "lib/polyclip.cpp"
 #include "ghcuda.h"
+
+using namespace std::chrono;
 
 int argn;
 
@@ -27,21 +30,21 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Alternate 1 -> PHASE:1 read input polygons
   // -------------------------------------------------------------------------------------------
-  // double *polyPX;
-  // double *polyPY;
-  // double *polyQX;
-  // double *polyQY;
+  double *polyPX;
+  double *polyPY;
+  double *polyQX;
+  double *polyQY;
 
-  // FILE *pfile, *qfile;
-  // pfile=fopen(argv[argn++], "r");
-  // qfile=fopen(argv[argn++], "r");
-  // gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
-  // gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
+  FILE *pfile, *qfile;
+  pfile=fopen(argv[argn++], "r");
+  qfile=fopen(argv[argn++], "r");
+  gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
+  gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
 
   // -------------------------------------------------------------------------------------------
   // Alternate 2 -> PHASE:1 read input polygons
   // -------------------------------------------------------------------------------------------
-  // /*
+  /*
   cout << "\nP "; loadPolygon(PP,string(argv[argn++]));
   cout <<   "Q "; loadPolygon(QQ,string(argv[argn++]));
   // -------------------------------------------------------------------------------------------
@@ -85,7 +88,7 @@ void regularPolygonHandler(int argc, char* argv[]){
     polyQY[i++] = V->p.y;
 	  // cout << "--- " << setprecision (15) << V->p.x << endl;
 	}
-  // */
+  */
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
@@ -551,6 +554,10 @@ void multiComponentPolygonHandler(int argc, char* argv[]){
 
 int main(int argc, char* argv[])
 {
+  high_resolution_clock::time_point start, end;
+
+  if(DEBUG_TIMING) start = high_resolution_clock::now();
+
   regularPolygonHandler(argc, argv);
   // multiComponentPolygonHandler(argc, argv);
 
@@ -565,7 +572,7 @@ int main(int argc, char* argv[])
   // -------------------------------------------------------------------------------------------
   createResult();
   // -------------------------------------------------------------------------------------------
-
+  if(DEBUG_TIMING) end = high_resolution_clock::now();
   // -------------------------------------------------------------------------------------------
   // post-processing
   // -------------------------------------------------------------------------------------------
@@ -577,4 +584,10 @@ int main(int argc, char* argv[])
   // -------------------------------------------------------------------------------------------
   cout << "R "; savePolygon(RR,string(argv[argn]));
   // -------------------------------------------------------------------------------------------
+
+  if(DEBUG_TIMING){
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << "All time in microseconds\nTime: Total : " << fixed
+    << duration.count() << setprecision(10) << endl;
+  }
 }

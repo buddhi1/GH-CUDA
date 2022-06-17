@@ -1727,9 +1727,15 @@ void calculateIntersections(
   double *dev_polyPX, *dev_polyPY, *dev_polyQX, *dev_polyQY;
   int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2;
   int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
+  cudaEvent_t kernelStart1, kernelStart2, kernelStart3, kernelStart4, kernelStart5, kernelStart6;
+  cudaEvent_t kernelStop1, kernelStop2, kernelStop3, kernelStop4, kernelStop5, kernelStop6;
 
   // Phase1: Count intersections in each block. Create prefix sums to find local locations in each thread 
   // Allocate memory in device 
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart1);
+    cudaEventCreate(&kernelStop1);
+  }
   cudaMalloc((void **) &dev_polyPX, sizeP*sizeof(double));
   cudaMalloc((void **) &dev_polyPY, sizeP*sizeof(double));
   cudaMalloc((void **) &dev_polyQX, sizeQ*sizeof(double));
@@ -1753,21 +1759,33 @@ void calculateIntersections(
   dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1), dimGrid(xblocksPerGrid, 1, 1); 
   printf("blockDim %d gridDim %d\n", dimBlock.x, dimGrid.x);
 
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart1);
   gpuCountIntersections<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
         sizeP, sizeQ, 
         dev_psP1, dev_psP2, dev_psQ1, dev_psQ2);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
 
   cudaMemcpy(&psP1, dev_psP1, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psP2, dev_psP2, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ1, dev_psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&psQ2, dev_psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
 
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop1);
+
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart2);
+    cudaEventCreate(&kernelStop2);
+  }
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart2);
   thrust::exclusive_scan(thrust::host, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
   thrust::exclusive_scan(thrust::host, psP2, psP2 + sizeP+1, psP2);
   thrust::exclusive_scan(thrust::host, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
   thrust::exclusive_scan(thrust::host, psQ2, psQ2 + sizeQ+1, psQ2);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop2);
+
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop2);
 
   // for (int i = 0; i < sizeQ+1; ++i){
   // for (int i = 0; i < 15+1; ++i){
@@ -1794,25 +1812,31 @@ void calculateIntersections(
   
   cudaMalloc((void **) &dev_neighborMapP, *countNonDegenIntP*sizeof(int));
   cudaMalloc((void **) &dev_neighborMapQ, *countNonDegenIntQ*sizeof(int));
-
+  
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart3);
+    cudaEventCreate(&kernelStop3);
+  }
   cudaMemcpy(dev_psP1, psP1, (sizeP+1)*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_psP2, psP2, (sizeP+1)*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_psQ1, psQ1, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(dev_psQ2, psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
 
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart3);
   gpuNeighborMap<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
         sizeP, sizeQ,  
         dev_psP2, dev_psQ2,
         dev_neighborMapP, dev_neighborMapQ);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop3);
   
 // -----------------------------------------------------------------------------------------------------
   // remove after kernel testing
   // cudaMemcpy(*neighborMapP, dev_neighborMapP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
   // cudaMemcpy(*neighborMapQ, dev_neighborMapQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
 // -----------------------------------------------------------------------------------------------------
-
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop3);
 
   // Phase 3: Calcualte intersections and save them in the arrays. Make neighbor connections
   int countIntersections=psP1[sizeP];
@@ -1856,7 +1880,13 @@ void calculateIntersections(
   cudaMalloc((void **) &dev_neighborMapP2, *countNonDegenIntP*sizeof(int));
   cudaMalloc((void **) &dev_neighborMapQ2, *countNonDegenIntQ*sizeof(int));
   cudaMalloc((void **) &dev_initLabelsQ, *countNonDegenIntQ*sizeof(int));
+  
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart4);
+    cudaEventCreate(&kernelStop4);
+  }
 
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart4);
   gpuCalculateIntersections<<<dimGrid, dimBlock>>>(
         dev_polyPX, dev_polyPY, 
         dev_polyQX, dev_polyQY, 
@@ -1867,15 +1897,23 @@ void calculateIntersections(
         dev_neighborP, dev_neighborQ, dev_neighborP2, dev_neighborQ2,
         dev_neighborMapP, dev_neighborMapQ, dev_neighborMapP2, dev_neighborMapQ2,
         dev_initLabelsQ);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop4);
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop4);
 
   cudaDeviceSynchronize();
-
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart5);
+    cudaEventCreate(&kernelStop5);
+  }
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart5);
   gpuSortPolyQ<<<dimGrid, dimBlock>>>(
         sizeP, sizeQ, 
         dev_psQ2, 
         dev_intersectionsQ, dev_intersectionsQ2,
         dev_alphaValuesQ, dev_tmpBucketQ,  dev_alphaSortedIndiciesQ,
         dev_neighborP, dev_neighborQ, dev_neighborQ2);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop5);
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop5);
 
   cudaDeviceSynchronize();
 
@@ -1887,12 +1925,18 @@ void calculateIntersections(
   // negative alpha values are not handled explicitly since they are original vertices
   // ******No need to copy alpha values since they are only used to sort edge wise******
   // cudaMemcpy(alphaSortedIndicies, dev_alphaSortedIndicies, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
+  if(DEBUG_TIMING){
+    cudaEventCreate(&kernelStart6);
+    cudaEventCreate(&kernelStop6);
+  }
 
+  if(DEBUG_TIMING) cudaEventRecord(kernelStart6);
   gpuCalculateInitLabel<<<dimGrid, dimBlock>>>(
       sizeP,  dev_psP2,
       dev_intersectionsP, dev_intersectionsQ, dev_alphaValuesP,
       dev_neighborP,
       *countNonDegenIntP, *countNonDegenIntQ, dev_initLabelsP, dev_initLabelsQ);
+  if(DEBUG_TIMING) cudaEventRecord(kernelStop6);
 
   cudaMemcpy(*intersectionsP, dev_intersectionsP, *countNonDegenIntP*2*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(*intersectionsQ, dev_intersectionsQ, *countNonDegenIntQ*2*sizeof(double), cudaMemcpyDeviceToHost);
@@ -1906,7 +1950,25 @@ void calculateIntersections(
   cudaMemcpy(*alphaValuesP, dev_alphaValuesP, *countNonDegenIntP*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(*alphaValuesQ, dev_alphaValuesQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
   
+  if(DEBUG_TIMING) cudaEventSynchronize(kernelStop6);
+  
   cudaDeviceSynchronize();
+
+  float kernelTiming1=0, kernelTiming2=0, kernelTiming3=0, kernelTiming4=0, kernelTiming5=0, kernelTiming6=0;
+  if(DEBUG_TIMING){
+    cudaEventElapsedTime(&kernelTiming1, kernelStart1, kernelStop1);
+    cudaEventElapsedTime(&kernelTiming2, kernelStart2, kernelStop2);
+    cudaEventElapsedTime(&kernelTiming3, kernelStart3, kernelStop3);
+    cudaEventElapsedTime(&kernelTiming4, kernelStart4, kernelStop4);
+    cudaEventElapsedTime(&kernelTiming5, kernelStart5, kernelStop5);
+    cudaEventElapsedTime(&kernelTiming6, kernelStart6, kernelStop6);
+    printf("\ngpuCountIntersections kernel exe time(ms) %f\n", kernelTiming1);
+    printf("prefixsum kernels exe time(ms) %f\n", kernelTiming2);
+    printf("gpuNeighborMap kernel exe time(ms) %f\n", kernelTiming3);
+    printf("gpuCalculateIntersections kernel exe time(ms) %f\n", kernelTiming4);
+    printf("gpuSortPolyQ kernel exe time(ms) %f\n", kernelTiming5);
+    printf("gpuCalculateInitLabel kernel exe time(ms) %f\n\n", kernelTiming6);
+  }
 
   // int limitP=*countNonDegenIntP;
   // int limitQ=*countNonDegenIntQ;
