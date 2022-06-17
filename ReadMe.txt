@@ -69,3 +69,10 @@ TO DO CODE
 5. Sice we have neighbor map and exact locations of neighbor location in the array, we should
     be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
     removing seperate section for Q info handling. 
+6. Parallelize later parts using OpenMP or pthread
+
+
+
+VERSIONS
+1. gppolyclip_v1.cu: Single component menthods tetsed good. 
+    Multi needs fixing in sorting and some other places
