@@ -705,7 +705,7 @@ __global__ void gpuCalculateIntersections(
                   double *intersectionsP, double *intersectionsQ, double *intersectionsP2, double *intersectionsQ2,
                   int *alphaValuesP, int *alphaValuesQ, int *tmpBucketP, int *tmpBucketQ, int *alphaSortedIndiciesP, int *alphaSortedIndiciesQ,
                   int *neighborP, int *neighborQ, int *neighborP2, int *neighborQ2,
-                  int *neighborMapP, int *neighborMapQ, int *neighborMapP2, int *neighborMapQ2,
+                  int *neighborMapP, int *neighborMapQ,
                   int *initLabelsQ){
   int id=blockDim.x*blockIdx.x+threadIdx.x;
   double alpha;
@@ -1593,8 +1593,8 @@ void calculateIntersections(
   int *alphaSortedIndiciesP, *alphaSortedIndiciesQ;
   double *dev_intersectionsP, *dev_intersectionsQ, *dev_intersectionsP2, *dev_intersectionsQ2;
   int *dev_neighborP, *dev_neighborQ, *dev_neighborP2, *dev_neighborQ2;
-  int *dev_neighborMapP2, *dev_neighborMapQ2, *dev_initLabelsP, *dev_initLabelsQ;
-  int  *dev_alphaValuesP, *dev_alphaValuesQ, *dev_tmpBucketP, *dev_tmpBucketQ, *dev_alphaSortedIndiciesP, *dev_alphaSortedIndiciesQ;
+  int *dev_initLabelsP, *dev_initLabelsQ;
+  int *dev_alphaValuesP, *dev_alphaValuesQ, *dev_tmpBucketP, *dev_tmpBucketQ, *dev_alphaSortedIndiciesP, *dev_alphaSortedIndiciesQ;
 
   *intersectionsP=(double *)malloc(*countNonDegenIntP*2*sizeof(double));
   *intersectionsQ=(double *)malloc(*countNonDegenIntQ*2*sizeof(double));
@@ -1626,8 +1626,8 @@ void calculateIntersections(
   cudaMalloc((void **) &dev_neighborP2, *countNonDegenIntP*sizeof(int));
   cudaMalloc((void **) &dev_neighborQ, *countNonDegenIntQ*sizeof(int));
   cudaMalloc((void **) &dev_neighborQ2, *countNonDegenIntQ*sizeof(int));
-  cudaMalloc((void **) &dev_neighborMapP2, *countNonDegenIntP*sizeof(int));
-  cudaMalloc((void **) &dev_neighborMapQ2, *countNonDegenIntQ*sizeof(int));
+  // cudaMalloc((void **) &dev_neighborMapP2, *countNonDegenIntP*sizeof(int));
+  // cudaMalloc((void **) &dev_neighborMapQ2, *countNonDegenIntQ*sizeof(int));
   cudaMalloc((void **) &dev_initLabelsQ, *countNonDegenIntQ*sizeof(int));
   
   if(DEBUG_TIMING){
@@ -1644,7 +1644,7 @@ void calculateIntersections(
         dev_intersectionsP, dev_intersectionsQ, dev_intersectionsP2, dev_intersectionsQ2,
         dev_alphaValuesP, dev_alphaValuesQ, dev_tmpBucketP, dev_tmpBucketQ, dev_alphaSortedIndiciesP, dev_alphaSortedIndiciesQ,
         dev_neighborP, dev_neighborQ, dev_neighborP2, dev_neighborQ2,
-        dev_neighborMapP, dev_neighborMapQ, dev_neighborMapP2, dev_neighborMapQ2,
+        dev_neighborMapP, dev_neighborMapQ,
         dev_initLabelsQ);
   if(DEBUG_TIMING) cudaEventRecord(kernelStop4);
   if(DEBUG_TIMING) cudaEventSynchronize(kernelStop4);

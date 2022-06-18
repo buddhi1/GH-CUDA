@@ -1,7 +1,7 @@
-#define xThreadPerBlock 128
+#define xThreadPerBlock 256
 #define yThreadPerBlock 1
 #define xBlockPerGrid 100
-#define yBlockPerGrid 100
+#define yBlockPerGrid 32
 #define EPSILON_POSITIONS 9
 #define EPSILON  0.000000001 
 #define DEBUG_MODE 1
