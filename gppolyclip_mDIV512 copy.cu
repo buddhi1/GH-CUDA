@@ -1,3 +1,8 @@
+/*
+Dimension of block y introduced
+Code cleaned
+Only simgle component
+*/
 #include <stdio.h>
 #include <math.h>
 #include <cuda.h>
@@ -350,83 +355,61 @@ __global__ void gpuCountIntersections(
                   int sizeP, int sizeQ, 
                   int *psP1, int *psP2, int *psQ1, int *psQ2){
   int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
-  int idx=threadIdx.x;  
-  __shared__ double poly2X_shared[MAX_POLY2_SIZE], poly2Y_shared[MAX_POLY2_SIZE];
+// int blockId = blockIdx.y * gridDim.x + blockIdx.x;
+// int threadId = blockId * blockDim.x + threadIdx.x;
+
   double alpha;
   double beta;
   point I;
-  int count1=0, count2=0, size=0, size2=sizeQ;
-  double *poly1X=polyPX, *poly1Y=polyPY;
+  int count1=0, count2=0, size=sizeQ;
+  double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
 //   printf("my id %d tx%d bx%d by%d bdx%d bdy%d gdx%d gdy%d\n", id, threadIdx.x, blockIdx.x, blockIdx.y, blockDim.x, blockDim.y, gridDim.x, gridDim.y);
-//   if(id>=sizeP+sizeQ) return;
+  if(id>=sizeP+sizeQ) return;
   point P1, P2, Q1, Q2;
   int pid=id;
-  int  phaseSize=(sizeQ+MAX_POLY2_SIZE-1)/MAX_POLY2_SIZE;
-  if(id>=sizeP && id<sizeQ){
+  if(id>=sizeP){
+    size=sizeP;
     poly1X=polyQX; 
     poly1Y=polyQY; 
+    poly2X=polyPX;
+    poly2Y=polyPY;
     pid=id-sizeP;
-    size2=sizeP;
-    phaseSize=(sizeP+MAX_POLY2_SIZE-1)/MAX_POLY2_SIZE;
   }
-//   printf("%d \n", phaseSize);
-  for(int phase=1; phase<phaseSize; phase++){
-    // if(id==0)    printf("**++ %d %d %d %d \n", idx, pid, MAX_POLY2_SIZE, phase);
-    if(blockIdx.x==0 && blockIdx.y==0){
-        // load data into shared memory collaboratively
-        poly2X_shared[idx]=polyQX[idx+(phase-1)*MAX_POLY2_SIZE];
-        poly2Y_shared[idx]=polyQY[idx+(phase-1)*MAX_POLY2_SIZE];
-    }else if(blockIdx.x==(sizeP + xThreadPerBlock - 1) / xThreadPerBlock && blockIdx.y==yBlockPerGrid){
-        // printf("**++ %d %d %d %d \n", idx, pid, MAX_POLY2_SIZE, phase);
-        // load data into shared memory collaboratively
-        poly2X_shared[idx]=polyPX[idx+(phase-1)*MAX_POLY2_SIZE];
-        poly2Y_shared[idx]=polyPY[idx+(phase-1)*MAX_POLY2_SIZE];
-        // printf("**++ %d %d \n", idx, MAX_POLY2_SIZE);
-    }
-        // printf("**++ %d %d %d %d \n", idx, pid, MAX_POLY2_SIZE, phase);
-    __syncthreads();
-    if(id<(sizeP+sizeQ)){
-        if(phase==phaseSize-1) size=size2%MAX_POLY2_SIZE;
-        else size=MAX_POLY2_SIZE;
-        for(int qid=0; qid<size; qid++){
-            P1.x = poly1X[pid];
-            P1.y = poly1Y[pid];
+  for(int qid=0; qid<size; qid++){
+    P1.x = poly1X[pid];
+    P1.y = poly1Y[pid];
 
-            Q1.x = poly2X_shared[qid];
-            Q1.y = poly2Y_shared[qid];
-            Q2.x = poly2X_shared[qid+1];
-            Q2.y = poly2Y_shared[qid+1];
+    Q1.x = poly2X[qid];
+    Q1.y = poly2Y[qid];
+    Q2.x = poly2X[qid+1];
+    Q2.y = poly2Y[qid+1];
 
-            // reset P2 vertex of last edge to first vertex
-            if(qid == size-1 && phase==phaseSize-1){
-            Q2.x = poly2X_shared[0];
-            Q2.y = poly2Y_shared[0];
-            }
-            //polygon1 is P and polygon2 is Q
-            if(pid==id && pid==sizeP-1){
-            P2.x = poly1X[0];
-            P2.y = poly1Y[0];
-            // printf("sp %d\n", pid);
-            }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
-            P2.x = poly1X[0];
-            P2.y = poly1Y[0];
-            // printf("sp %d\n", pid);
-            } else { //no need reset. Normal case
-            P2.x = poly1X[pid+1];
-            P2.y = poly1Y[pid+1];
-            }
-            // determine intersection or overlap type
-            int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-            if(i!=0){
-            count1++;
-            if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
-                count2++;
-            }
-        }
+    // reset P2 vertex of last edge to first vertex
+    if(qid == size-1){
+      Q2.x = poly2X[0];
+      Q2.y = poly2Y[0];
     }
-    __syncthreads();
+    //polygon1 is P and polygon2 is Q
+    if(pid==id && pid==sizeP-1){
+      P2.x = poly1X[0];
+      P2.y = poly1Y[0];
+      // printf("sp %d\n", pid);
+    }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
+      P2.x = poly1X[0];
+      P2.y = poly1Y[0];
+      // printf("sp %d\n", pid);
+    } else { //no need reset. Normal case
+      P2.x = poly1X[pid+1];
+      P2.y = poly1Y[pid+1];
+    }
+    // determine intersection or overlap type
+    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+    if(i!=0){
+      count1++;
+      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
+        count2++;
+    }
   }
-  __syncthreads();
   count2++; //represent the parent vertex 
   if(id<sizeP){
     psP1[pid]=count1;
