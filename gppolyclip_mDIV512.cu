@@ -1118,6 +1118,9 @@ void calculateIntersections(
     int blocksPerGrid=((sizeP+sizeQ) + xThreadPerBlock - 1) / xThreadPerBlock;
     int xBlocksPerGrid=(blocksPerGrid + yBlockPerGrid - 1) / yBlockPerGrid;
 
+
+    // ******size_t number_of_blocks = N/threads_per_block + (size_t)(N % threads_per_block != 0);
+
     dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1), dimGrid(xBlocksPerGrid, yBlockPerGrid, 1); 
     printf("blockDim %d gridDimx %d gridDimy %d\n", dimBlock.x, dimGrid.x, dimGrid.y);
 
