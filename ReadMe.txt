@@ -70,6 +70,7 @@ TO DO CODE
     be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
     removing seperate section for Q info handling. 
 6. Parallelize later parts using OpenMP or pthread
+7. Optimization: If prefix sum of the given id is 0, no need to run th ekernel for that pid
 
 
 
