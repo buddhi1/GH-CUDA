@@ -66,6 +66,14 @@ TO DO CODE
 2. CMBR filter using GPU
 3. Point-in-polygon test GPU
 4. manage when size of PP or QQ >0 >>>> WORKING ON THIS
-5. Sice we have neighbor map and exact locations of neighbor location in the array, we should
+5. Since we have neighbor map and exact locations of neighbor location in the array, we should
     be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
     removing seperate section for Q info handling. 
+6. Parallelize later parts using OpenMP or pthread
+7. Optimization: If prefix sum of the given id is 0, no need to run the kernel for that pid
+
+
+
+VERSIONS
+1. gppolyclip_v1.cu: Single component menthods tetsed good. 
+    Multi needs fixing in sorting and some other places
