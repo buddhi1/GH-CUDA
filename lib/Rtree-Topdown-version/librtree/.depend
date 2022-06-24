@@ -1,0 +1,5 @@
+card.o: src/card.c include/index.h include/card.h
+index.o: src/index.c include/index.h include/card.h
+node.o: src/node.c include/index.h include/card.h
+rect.o: src/rect.c include/index.h
+split_l.o: src/split_l.c include/index.h include/card.h include/split_l.h

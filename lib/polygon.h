@@ -381,7 +381,7 @@ public:
   // default-constructor for generating an empty polygon
   //
   polygon() : root(NULL) {}
-  
+  int size=0;
   //
   // create a new vertex and append it to the polygon
   //
@@ -394,6 +394,7 @@ public:
       V->next = V;
       V->prev = V;
       root = V;
+      size++;
     } 
     else {
       // add vertex at the end 
@@ -401,6 +402,7 @@ public:
       V->next = root;
       root->prev->next = V;
       root->prev = V;
+      size++;
     } 
   }
 
@@ -534,7 +536,7 @@ public:
   }
 
   vertex* root;               // root vertex of the polygon
-  int numVertices;            // number of vertices in the polygon
+  // int numVertices;            // number of vertices in the polygon
 
 protected:
   vertexIterator vertexIter;  // vertex iterator
@@ -562,7 +564,7 @@ inline istream& operator>>(istream& s, polygon& P) {
         readOn = false;
   	}
   } while (readOn && !s.eof());
-  P.numVertices=count;
+  // P.numVertices=count;
 
   return (s); 
 }

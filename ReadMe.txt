@@ -6,6 +6,16 @@ for a fresh make
 make clean
 make
 
+
+shapefile to WKT
+ogr2ogr -f CSV continents.csv continents/continent.shp -lco GEOMETRY=AS_WKT
+
+Map Polygon in Google maps
+https://arthur-e.github.io/Wicket/sandbox-gmaps3.html
+
+Map a shape file
+https://mygeodata.cloud/converter/shp-to-csv 
+
 usage:
 
 ./program data/Fig1-P.poly data/Fig1-Q.poly results/Fig1-R.poly
@@ -77,3 +87,53 @@ TO DO CODE
 VERSIONS
 1. gppolyclip_v1.cu: Single component menthods tetsed good. 
     Multi needs fixing in sorting and some other places
+
+
+
+P->ne_10m_ocean
+Q->ne_10m_land
+
+6822 polygons found
+6838 polygons found
+P Polygons
+100612 0
+66475 36
+15547 2742
+10887 2741
+9461 5978
+3838 2854
+3706 2737
+3612 6017
+3163 2723
+3062 2740
+2478 3346
+2387 6805
+2358 3293
+2253 2726
+2207 2385
+1847 6785
+1791 6020
+1778 717
+1738 6778
+1568 2846
+Q Polygons
+81511 4
+66475 1
+15956 0
+15547 33
+10887 30
+9461 3
+3838 42
+3706 25
+3612 8
+3163 19
+3062 26
+2478 17
+2387 5
+2358 12
+2253 23
+2207 28
+1847 97
+1791 10
+1778 92
+1738 96

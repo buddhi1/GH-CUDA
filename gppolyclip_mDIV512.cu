@@ -350,16 +350,13 @@ Called from Host
 //                   int sizeP, int sizeQ, 
 //                   int *psP1, int *psP2, int *psQ1, int *psQ2){
 //   int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
-// // int blockId = blockIdx.y * gridDim.x + blockIdx.x;
-// // int threadId = blockId * blockDim.x + threadIdx.x;
-
 //   double alpha;
 //   double beta;
 //   point I;
 //   int count1=0, count2=0, size=sizeQ;
 //   double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
-// //   printf("my id %d tx%d bx%d by%d bdx%d bdy%d gdx%d gdy%d\n", id, threadIdx.x, blockIdx.x, blockIdx.y, blockDim.x, blockDim.y, gridDim.x, gridDim.y);
 //   if(id>=sizeP+sizeQ) return;
+//   // printf("my id %d tx%d bx%d by%d bdx%d bdy%d gdx%d gdy%d\n", id, threadIdx.x, blockIdx.x, blockIdx.y, blockDim.x, blockDim.y, gridDim.x, gridDim.y);
 //   point P1, P2, Q1, Q2;
 //   int pid=id;
 //   if(id>=sizeP){
@@ -387,34 +384,20 @@ Called from Host
 //   }
 
 //   for(int qid=0; qid<size; qid++){
-//     // P1.x = poly1X[pid];
-//     // P1.y = poly1Y[pid];
-
 //     Q1.x = poly2X[qid];
 //     Q1.y = poly2Y[qid];
-//     Q2.x = poly2X[qid+1];
-//     Q2.y = poly2Y[qid+1];
 
 //     // reset P2 vertex of last edge to first vertex
 //     if(qid == size-1){
 //       Q2.x = poly2X[0];
 //       Q2.y = poly2Y[0];
+//     }else{
+//       Q2.x = poly2X[qid+1];
+//       Q2.y = poly2Y[qid+1];
 //     }
-//     // //polygon1 is P and polygon2 is Q
-//     // if(pid==id && pid==sizeP-1){
-//     //   P2.x = poly1X[0];
-//     //   P2.y = poly1Y[0];
-//     //   // printf("sp %d\n", pid);
-//     // }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
-//     //   P2.x = poly1X[0];
-//     //   P2.y = poly1Y[0];
-//     //   // printf("sp %d\n", pid);
-//     // } else { //no need reset. Normal case
-//     //   P2.x = poly1X[pid+1];
-//     //   P2.y = poly1Y[pid+1];
-//     // }
 //     // determine intersection or overlap type
 //     int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+//     // if (id==0) printf("id %d (%f %f) (%f %f) (%f %f) (%f %f) i %d\n", id, P1.x, P1.y, P2.x, P2.y, Q1.x, Q1.y, Q2.x, Q2.y, i);
 //     if(i!=0){
 //       count1++;
 //       if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
@@ -425,31 +408,12 @@ Called from Host
 //   if(id<sizeP){
 //     psP1[pid]=count1;
 //     psP2[pid]=count2;
+//     // printf("id %d count1 %d count2 %d\n", id, count1, count2);
 //   } else{
 //     psQ1[pid]=count1;
 //     psQ2[pid]=count2;
+//     // printf("id %d count1 %d count2 %d\n", id, count1, count2);
 //   }
-
-//   // __syncthreads();
-//   // thrust::exclusive_scan(thrust::device, psP1, psP1 + sizeP+1, psP1);   //sizeP location contains the total size of the count1
-//   // thrust::exclusive_scan(thrust::device, psP2, psP2 + sizeP+1, psP2);
-//   // thrust::exclusive_scan(thrust::device, psQ1, psQ1 + sizeQ+1, psQ1);   //sizeQ location contains the total size of the count1
-//   // thrust::exclusive_scan(thrust::device, psQ2, psQ2 + sizeQ+1, psQ2);
-//   // printf("id %d count1 %d count2  %d (%f,%f) (%f,%f)\n", id, count1, count2, P1.x, P1.y, P2.x, P2.y);
-//   // __syncthreads();
-//   // if(id==0){
-//   //   printf("%d \n", sizeP);
-//   //   for(int ii=0; ii<sizeP; ++ii){
-//   //     // printf("%d *%d ", psP1[ii], psP2[ii]);
-//   //     printf("%d ", psP1[ii]);
-//   //   }
-//   //   printf("\nend\n");
-//   //   for(int ii=0; ii<sizeQ; ++ii){
-//   //     // printf("%d *%d ", psQ1[ii], psQ2[ii]);
-//   //     printf("%d ", psQ1[ii]);
-//   //   }
-//   //   printf("\nend\n");
-//   // }
 // }
 
 // __global__ void gpuCountIntersections2(
@@ -615,7 +579,7 @@ __global__ void gpuCountIntersections(
   double alpha;
   double beta;
   point I;
-  int count1=0, count2=0, size=0, padding=32;
+  int count1=0, count2=0, size=0;
   point P1, P2, Q1, Q2;
 
   int tiles=(sizeQ+MAX_POLY2_SIZE-1)/MAX_POLY2_SIZE;
@@ -647,7 +611,7 @@ __global__ void gpuCountIntersections(
       }
     } 
     __syncthreads();
-    for(int qid=idx*padding, qCount=0; qCount<size; qid=((qid+1)%size), ++qCount){   
+    for(int qid=idx*SHARED_MEMORY_PADDING, qCount=0; qCount<size; qid=((qid+1)%size), ++qCount){   
     // for(int qid=0; qid<size; qid++){  
       Q1.x = poly2X_shared[qid];
       Q1.y = poly2Y_shared[qid];
@@ -1210,17 +1174,16 @@ void calculateIntersections(
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
 
-    if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
-
     // int maxX=(sizeP+sizeQ-2)/(dimGrid.x*dimGrid.y);
     // int maxY=((sizeP+sizeQ-2)%(dimGrid.x*dimGrid.y))/dimGrid.x;
     // int maxID=(maxY*dimGrid.x+maxX)*dimBlock.x+(dimBlock.x-1)+dimBlock.x;
 
+    dim3 dimGrid2(xBlocksPerGrid, yBlockPerGrid, 1);
     // if(DEBUG_TIMING) cudaEventRecord(kernelStart1);
-    // gpuCountIntersections2<<<dimGrid2, dimBlock>>>(
+    // gpuCountIntersections1<<<dimGrid2, dimBlock>>>(
     //         dev_polyPX, dev_polyPY, 
     //         dev_polyQX, dev_polyQY, 
-    //         sizeP, sizeQ, maxID,
+    //         sizeP, sizeQ,
     //         dev_psP1, dev_psP2, dev_psQ1, dev_psQ2);
     // if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
 
@@ -1230,6 +1193,7 @@ void calculateIntersections(
     cudaMemcpy(&psQ2, dev_psQ2, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
 
     if(DEBUG_TIMING) cudaEventSynchronize(kernelStop1);
+    cudaDeviceSynchronize();
 
     if(DEBUG_TIMING){
         cudaEventCreate(&kernelStart2);
@@ -1262,7 +1226,7 @@ void calculateIntersections(
     *countNonDegenIntP=psP2[sizeP];
     *countNonDegenIntQ=psQ2[sizeQ];
 
-    printf("degen count P %d *****--- Q %d\n", *countNonDegenIntP, *countNonDegenIntQ);
+    printf("Non-degen count P %d *****--- Q %d\n", *countNonDegenIntP-sizeP, *countNonDegenIntQ-sizeQ);
 
     dim3 dimGrid(xBlocksPerGrid, yBlockPerGrid, 1);
     printf("blockDim %d gridDimx %d gridDimy %d\n", dimBlock.x, dimGrid.x, dimGrid.y);

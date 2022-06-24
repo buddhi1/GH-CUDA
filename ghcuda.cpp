@@ -1,5 +1,6 @@
 #include <iostream>
 #include<bits/stdc++.h>
+#include <vector>
 #include <chrono>
 
 #include "lib/polyclip.cpp"
@@ -7,11 +8,15 @@
 
 using namespace std::chrono;
 
+#include "lib/readShapefile.cpp"
+
+
 int argn;
 
 // handles polygons without holes
 void regularPolygonHandler(int argc, char* argv[]){
   // check input parameters
+  /*
   if (argc < 4) {
     cout << "insufficient number of parameters" << endl;
     exit(0);
@@ -23,13 +28,15 @@ void regularPolygonHandler(int argc, char* argv[]){
     UNION = true;
     argn++;
   }
+  */
   int i=0, j;
 
   int sizeP=0, sizeQ=0;
 
   // -------------------------------------------------------------------------------------------
-  // Alternate 1 -> PHASE:1 read input polygons
+  // Alternate 1 -> PHASE:1 read input polygons from polygon XY format file
   // -------------------------------------------------------------------------------------------
+  /*
   double *polyPX;
   double *polyPY;
   double *polyQX;
@@ -40,13 +47,31 @@ void regularPolygonHandler(int argc, char* argv[]){
   qfile=fopen(argv[argn++], "r");
   gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
   gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
+  */
 
   // -------------------------------------------------------------------------------------------
-  // Alternate 2 -> PHASE:1 read input polygons
+  // Alternate 2 -> PHASE:1 read input polygons from given XY format with , and ; seperators
   // -------------------------------------------------------------------------------------------
-  /*
-  cout << "\nP "; loadPolygon(PP,string(argv[argn++]));
-  cout <<   "Q "; loadPolygon(QQ,string(argv[argn++]));
+  // cout << "\nP "; loadPolygon(PP,string(argv[argn++]));
+  // cout <<   "Q "; loadPolygon(QQ,string(argv[argn++]));
+  // -------------------------------------------------------------------------------------------
+
+  // -------------------------------------------------------------------------------------------
+  // Alternate 3 -> PHASE:1 read input polygons from shape files
+  // -------------------------------------------------------------------------------------------
+  cout<<"here"<<endl;
+	int PPID=0; //ne_10m_ocean
+  // int QQID=521; //continents
+  int QQID=1; //ne_10m_land
+  loadPolygonFromShapeFile2(PPTmp, string("../datasets/ne_10m_ocean.csv"), PPID+1);
+	// loadPolygonFromShapeFile2(QQTmp, string("../datasets/continents.csv"), QQID+1);
+	loadPolygonFromShapeFile2(QQTmp, string("../datasets/ne_10m_land.csv"), QQID+1);
+  
+  cout << "PP Polygon size " << PPTmp[PPID].size;
+  cout << " QQ Polygon size " << QQTmp[QQID].size << endl;
+
+  PP.push_back(PPTmp[PPID]);
+  QQ.push_back(QQTmp[QQID]);
   // -------------------------------------------------------------------------------------------
   
   // -------------------------------------------------------------------------------------------
@@ -54,24 +79,21 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Read input polygons 
   // -------------------------------------------------------------------------------------------
-
-
   // cout << "size " << sizeP << endl;
   // for(i=0; i<sizeP; ++i){
   //   cout << polyPX[i] << "," << polyPY[i] << endl;
   // }
 
-  // return;
-
   // -------------------------------------------------------------------------------------------
   // arrays for polygon P and polygon Q
   // array format polyPX=[x_1, x_2, ...]
   // array format polyPY=[y_1, y_2, ...]
+  // This copying is required for alternate 2 and 3 reading methods
   // -------------------------------------------------------------------------------------------
-  double polyPX[PP[0].numVertices];
-  double polyPY[PP[0].numVertices];
-  double polyQX[QQ[0].numVertices];
-  double polyQY[QQ[0].numVertices];
+  double polyPX[PP[0].size];
+  double polyPY[PP[0].size];
+  double polyQX[QQ[0].size];
+  double polyQY[QQ[0].size];
 
   i=0;
   // copy polygon P values
@@ -80,6 +102,7 @@ void regularPolygonHandler(int argc, char* argv[]){
     polyPY[i++] = V->p.y;
 	  // cout << "--- " << setprecision (15) << V->p.x << endl;
 	}
+  cout<<"PP Count "<<i;
 
   i=0;
   // copy polygon Q values
@@ -88,7 +111,8 @@ void regularPolygonHandler(int argc, char* argv[]){
     polyQY[i++] = V->p.y;
 	  // cout << "--- " << setprecision (15) << V->p.x << endl;
 	}
-  */
+  cout<<" QQ Count "<<i<<endl;
+  
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
@@ -111,7 +135,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   calculateIntersections(
       polyPX, polyPY, 
       polyQX, polyQY, 
-      PP[0].numVertices, QQ[0].numVertices, 
+      PP[0].size, QQ[0].size, 
       &countNonDegenIntP, &countNonDegenIntQ, 
       &intersectionsP, &intersectionsQ, &alphaValuesP, &alphaValuesQ,
       &initLabelsP, &initLabelsQ, 
