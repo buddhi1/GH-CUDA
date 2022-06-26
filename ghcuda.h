@@ -10,7 +10,7 @@ void calculateIntersections(
                 int *countNonDegenIntP, int *countNonDegenIntQ, 
                 double **intersectionsP, double **intersectionsQ, int **alphaValuesP, int **alphaValuesQ,
                 int **initLabelsP, int **initLabelsQ,
-                int **neighborMapP, int **neighborMapQ, int **neighborP, int **neighborQ);
+                int **neighborP, int **neighborQ);
 void calculateIntersectionsMultipleComponents(
                 double *polyPX, double *polyPY, 
                 double *polyQX,  double *polyQY, 
@@ -18,4 +18,4 @@ void calculateIntersectionsMultipleComponents(
                 int *countNonDegenIntP, int *countNonDegenIntQ, 
                 double **intersectionsP, double **intersectionsQ, int **alphaValuesP, int **alphaValuesQ,
                 int **initLabelsP, int **initLabelsQ,
-                int **neighborMapP, int **neighborMapQ, int **neighborP, int **neighborQ);
+                int **neighborP, int **neighborQ);

@@ -877,7 +877,7 @@ void gpc_read_polygon(FILE *fp, double **px, double **py, int *size, string poly
   // P.numVertices=*size;
   if(polyName=="PP") PP.push_back(P);
   else QQ.push_back(P);
-  printf("Polygon with %d vertices reading completed!\n", *size);
+  printf("Polygon %s with %d vertices reading completed!\n", polyName.c_str(), *size);
 }
 
 //

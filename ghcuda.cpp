@@ -29,6 +29,7 @@ void regularPolygonHandler(int argc, char* argv[]){
     argn++;
   }
   */
+  // ******** MAKE SURE sizeP>sizeQ
   int i=0, j;
 
   int sizeP=0, sizeQ=0;
@@ -59,19 +60,20 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Alternate 3 -> PHASE:1 read input polygons from shape files
   // -------------------------------------------------------------------------------------------
-  cout<<"here"<<endl;
+// /*
 	int PPID=0; //ne_10m_ocean
-  // int QQID=521; //continents
-  int QQID=1; //ne_10m_land
   loadPolygonFromShapeFile2(PPTmp, string("../datasets/ne_10m_ocean.csv"), PPID+1);
-	// loadPolygonFromShapeFile2(QQTmp, string("../datasets/continents.csv"), QQID+1);
-	loadPolygonFromShapeFile2(QQTmp, string("../datasets/ne_10m_land.csv"), QQID+1);
+  int QQID=521; //continents
+	loadPolygonFromShapeFile2(QQTmp, string("../datasets/continents.csv"), QQID+1);
+  // int QQID=1; //ne_10m_land
+	// loadPolygonFromShapeFile2(QQTmp, string("../datasets/ne_10m_land.csv"), QQID+1);
   
   cout << "PP Polygon size " << PPTmp[PPID].size;
   cout << " QQ Polygon size " << QQTmp[QQID].size << endl;
 
   PP.push_back(PPTmp[PPID]);
   QQ.push_back(QQTmp[QQID]);
+  // */
   // -------------------------------------------------------------------------------------------
   
   // -------------------------------------------------------------------------------------------
@@ -90,6 +92,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // array format polyPY=[y_1, y_2, ...]
   // This copying is required for alternate 2 and 3 reading methods
   // -------------------------------------------------------------------------------------------
+//  /*
   double polyPX[PP[0].size];
   double polyPY[PP[0].size];
   double polyQX[QQ[0].size];
@@ -100,7 +103,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   for (vertex* V : PP[0].vertices(ALL)){
     polyPX[i] = V->p.x;
     polyPY[i++] = V->p.y;
-	  // cout << "--- " << setprecision (15) << V->p.x << endl;
+	  // cout << "--- " << setprecision (15) << polyPX[i-1] << ", " << polyPY[i-1] << endl;
 	}
   cout<<"PP Count "<<i;
 
@@ -112,7 +115,7 @@ void regularPolygonHandler(int argc, char* argv[]){
 	  // cout << "--- " << setprecision (15) << V->p.x << endl;
 	}
   cout<<" QQ Count "<<i<<endl;
-  
+  // */
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
@@ -129,7 +132,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // PHASE:2 calculate intersections using GPU acceleration
   // -------------------------------------------------------------------------------------------
   double *intersectionsP, *intersectionsQ;
-  int countNonDegenIntP, countNonDegenIntQ, *initLabelsP, *initLabelsQ, *neighborP, *neighborQ, *neighborMapP, *neighborMapQ;
+  int countNonDegenIntP, countNonDegenIntQ, *initLabelsP, *initLabelsQ, *neighborP, *neighborQ;
   int *alphaValuesP, *alphaValuesQ;
   vertex *tmpVertex, *current;
   calculateIntersections(
@@ -139,7 +142,7 @@ void regularPolygonHandler(int argc, char* argv[]){
       &countNonDegenIntP, &countNonDegenIntQ, 
       &intersectionsP, &intersectionsQ, &alphaValuesP, &alphaValuesQ,
       &initLabelsP, &initLabelsQ, 
-      &neighborMapP, &neighborMapQ, &neighborP, &neighborQ);
+      &neighborP, &neighborQ);
   // -------------------------------------------------------------------------------------------
 // return 0;
   // -------------------------------------------------------------------------------------------
@@ -374,7 +377,7 @@ void regularPolygonHandler(int argc, char* argv[]){
 //   cout << endl;
 
 //   double *intersectionsP, *intersectionsQ;
-//   int countNonDegenIntArrayP[sizePP], countNonDegenIntArrayQ[sizeQQ], *initLabelsP, *initLabelsQ, *neighborP, *neighborQ, *neighborMapP, *neighborMapQ;
+//   int countNonDegenIntArrayP[sizePP], countNonDegenIntArrayQ[sizeQQ], *initLabelsP, *initLabelsQ, *neighborP, *neighborQ;
 //   int *alphaValuesP, *alphaValuesQ;
 //   vertex *tmpVertex, *current;
 //   vertex* V;
@@ -386,7 +389,7 @@ void regularPolygonHandler(int argc, char* argv[]){
 //       countNonDegenIntArrayP, countNonDegenIntArrayQ, 
 //       &intersectionsP, &intersectionsQ, &alphaValuesP, &alphaValuesQ,
 //       &initLabelsP, &initLabelsQ, 
-//       &neighborMapP, &neighborMapQ, &neighborP, &neighborQ);
+//       &neighborP, &neighborQ);
 //   // -------------------------------------------------------------------------------------------
 // // return 0;  
 //   // -------------------------------------------------------------------------------------------

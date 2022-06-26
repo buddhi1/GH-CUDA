@@ -23,7 +23,9 @@ usage:
 ./program data/Fig14-P.poly data/Fig14-Q.poly results/Fig14-R.poly
 ./program data/Fig14-P-clockWise.poly data/Fig14-Q.poly results/Fig14-R.poly
 ./program data/Fig15-P.poly data/Fig15-Q.poly results/Fig15-R.poly
+
 ./program data/Fig16-P.poly data/Fig16-Q.poly results/Fig16-R.poly
+./program data/Fig16-Q.poly data/Fig16-P.poly results/Fig16-R.poly
 
 ./program data/Fig17-P.poly data/Fig17-Q.poly results/Fig17-R.poly
 ./program data/Fig17-P-Clockwise.poly data/Fig17-Q.poly results/Fig17-R.poly
