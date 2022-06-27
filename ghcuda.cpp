@@ -16,7 +16,7 @@ int argn;
 // handles polygons without holes
 void regularPolygonHandler(int argc, char* argv[]){
   // check input parameters
-  /*
+  // /*
   if (argc < 4) {
     cout << "insufficient number of parameters" << endl;
     exit(0);
@@ -28,7 +28,7 @@ void regularPolygonHandler(int argc, char* argv[]){
     UNION = true;
     argn++;
   }
-  */
+  // */
   // ******** MAKE SURE sizeP>sizeQ
   int i=0, j;
 
@@ -37,7 +37,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Alternate 1 -> PHASE:1 read input polygons from polygon XY format file
   // -------------------------------------------------------------------------------------------
-  /*
+  // /*
   double *polyPX;
   double *polyPY;
   double *polyQX;
@@ -48,7 +48,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   qfile=fopen(argv[argn++], "r");
   gpc_read_polygon(pfile, &polyPX, &polyPY, &sizeP, "PP");
   gpc_read_polygon(qfile, &polyQX, &polyQY, &sizeQ, "QQ");
-  */
+  // */
 
   // -------------------------------------------------------------------------------------------
   // Alternate 2 -> PHASE:1 read input polygons from given XY format with , and ; seperators
@@ -60,7 +60,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // -------------------------------------------------------------------------------------------
   // Alternate 3 -> PHASE:1 read input polygons from shape files
   // -------------------------------------------------------------------------------------------
-// /*
+/*
 	int PPID=0; //ne_10m_ocean
   loadPolygonFromShapeFile2(PPTmp, string("../datasets/ne_10m_ocean.csv"), PPID+1);
   int QQID=521; //continents
@@ -92,7 +92,7 @@ void regularPolygonHandler(int argc, char* argv[]){
   // array format polyPY=[y_1, y_2, ...]
   // This copying is required for alternate 2 and 3 reading methods
   // -------------------------------------------------------------------------------------------
-//  /*
+ /*
   double polyPX[PP[0].size];
   double polyPY[PP[0].size];
   double polyQX[QQ[0].size];
