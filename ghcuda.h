@@ -1,4 +1,4 @@
-#include "constants.h"
+#include "lib/constants.h"
 
 void calculateIntersections(
                 double *polyPX, double *polyPY, double *polyQX,  double *polyQY, 
@@ -6,7 +6,7 @@ void calculateIntersections(
 void calculateIntersections(
                 double *polyPX, double *polyPY, 
                 double *polyQX,  double *polyQY, 
-                int sizeP, int sizeQ, 
+                int sizeP, int sizeQ, double *cmbr,
                 int *countNonDegenIntP, int *countNonDegenIntQ, 
                 double **intersectionsP, double **intersectionsQ, int **alphaValuesP, int **alphaValuesQ,
                 int **initLabelsP, int **initLabelsQ,

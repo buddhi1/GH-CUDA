@@ -25,6 +25,7 @@
 
 using namespace std;
 
+#include "constants.h"
 #include "point2D.h"
 #include "polygon.h"
 #include "readSCPolygon.h"
@@ -33,7 +34,8 @@ using namespace std;
 
 #define EPSILON  0.000000001            // tolerance
 
-vector<polygon> PP, QQ;                 // two input polygons
+vector<polygon> PP, QQ; 
+vertex **PPVertexPointers, **QQVertexPointers;                // two input polygons
 vector<polygon> RR;                     // output polygon
 
 bool UNION = false;                     // global switch for computing union instead of intersection
@@ -183,7 +185,7 @@ IntersectionType intersect(const edge& edgeP, const edge& edgeQ, double& alpha, 
 // compute all intersections
 //
 void computeIntersections() {
-  cout << "Computing intersections...\n\n";
+  if(DEBUG_INFO_PRINT) cout << "Computing intersections...\n\n";
   
   point2D I;
   double alpha;
@@ -264,16 +266,17 @@ void computeIntersections() {
             break;
     			}
         }
-    
-  cout << "... " << count[1] << " non-degenerate and ";
-  cout << count[2]+count[3]+count[4]+count[5]+count[6]+count[7]+count[8] << " degenerate intersections found" << endl;
-  cout << "       (" << count[2]+count[3] << " T-intersections, ";
-  cout << count[4] << " V-intersections,\n        ";
-  cout << count[5] << " X-overlaps, ";
-  cout << count[6]+count[7] << " T-overlaps, ";
-  cout << count[8] << " V-overlaps)" << endl;
-  cout << "... " << count[1]+count[5]+count[3]+count[7] << " vertices added to P" << endl;
-  cout << "... " << count[1]+count[5]+count[2]+count[6] << " vertices added to Q" << endl;
+  if(DEBUG_INFO_PRINT){  
+    cout << "... " << count[1] << " non-degenerate and ";
+    cout << count[2]+count[3]+count[4]+count[5]+count[6]+count[7]+count[8] << " degenerate intersections found" << endl;
+    cout << "       (" << count[2]+count[3] << " T-intersections, ";
+    cout << count[4] << " V-intersections,\n        ";
+    cout << count[5] << " X-overlaps, ";
+    cout << count[6]+count[7] << " T-overlaps, ";
+    cout << count[8] << " V-overlaps)" << endl;
+    cout << "... " << count[1]+count[5]+count[3]+count[7] << " vertices added to P" << endl;
+    cout << "... " << count[1]+count[5]+count[2]+count[6] << " vertices added to Q" << endl;
+  }
 }
 //
 ////////////////////////////////////////////////////////////////////////
@@ -329,7 +332,7 @@ RelativePositionType oracle(vertex* Q, vertex* P1, vertex* P2, vertex* P3) {
 // label all intersections
 //
 void labelIntersections() {
-  cout << "\nLabelling intersections...\n\n";
+  if(DEBUG_INFO_PRINT) cout << "\nLabelling intersections...\n\n";
   
 	//
 	// 1) initial classification
@@ -443,7 +446,7 @@ void labelIntersections() {
   		}
     }
 
-  cout << "... " << count[0] << " delayed crossings and " << count[1] << " delayed bouncings" << endl;
+  if(DEBUG_INFO_PRINT) cout << "... " << count[0] << " delayed crossings and " << count[1] << " delayed bouncings" << endl;
 
 	//
 	// 3) copy labels from P to Q
@@ -527,7 +530,7 @@ void labelIntersections() {
     next_P: ;
   }
   
-  cout << "... " << count[0] << " interior and " << count[1] << " identical components added to result\n";
+  if(DEBUG_INFO_PRINT) cout << "... " << count[0] << " interior and " << count[1] << " identical components added to result\n";
 
 	//
 	// 4) set entry/exit flags
@@ -700,7 +703,7 @@ void labelIntersections() {
     }
   }
 
-  cout << "... " << count[0] << " bouncing vertex pairs split" << endl;
+  if(DEBUG_INFO_PRINT) cout << "... " << count[0] << " bouncing vertex pairs split" << endl;
   
 	//
 	// 6) handle CROSSING vertex candidates
@@ -728,7 +731,7 @@ void labelIntersections() {
 // create the result polygon
 //
 void createResult() {
-  cout << "\nCreating result...\n";
+  if(DEBUG_INFO_PRINT) cout << "\nCreating result...\n";
   //
   // for all crossing vertices
   //
@@ -776,7 +779,7 @@ void createResult() {
 // cleans up the result polygon by removing unnecessary collinear vertices
 //
 void cleanUpResult() {
-  cout << "\nPost-processing...\n\n";
+  if(DEBUG_INFO_PRINT) cout << "\nPost-processing...\n\n";
   int count = 0;
   for (polygon& R : RR) {
     while ( (R.root != NULL) && (fabs(A(R.root->prev->p,R.root->p,R.root->next->p)) < EPSILON) ) {
@@ -790,7 +793,7 @@ void cleanUpResult() {
           count++;
         }
   }
-  cout << "... " << count << " vertices removed\n\n";
+  if(DEBUG_INFO_PRINT) cout << "... " << count << " vertices removed\n\n";
 }
 //
 ////////////////////////////////////////////////////////////////////////
@@ -834,7 +837,7 @@ void loadPolygon(vector<polygon>& PP, string s) {
       PP.push_back(P);
   } while (!from.eof());
   from.close();
-  printInfo(PP);
+  if(DEBUG_INFO_PRINT) printInfo(PP);
 }
 //
 ////////////////////////////////////////////////////////////////////////
@@ -848,7 +851,7 @@ void savePolygon(vector<polygon>& PP, string s) {
   for (polygon& P : PP)
     to << P;
   to.close();
-  printInfo(PP);
+  if(DEBUG_INFO_PRINT) printInfo(PP);
 }
 //
 ////////////////////////////////////////////////////////////////////////
@@ -877,7 +880,7 @@ void gpc_read_polygon(FILE *fp, double **px, double **py, int *size, string poly
   // P.numVertices=*size;
   if(polyName=="PP") PP.push_back(P);
   else QQ.push_back(P);
-  printf("Polygon %s with %d vertices reading completed!\n", polyName.c_str(), *size);
+  if(DEBUG_INFO_PRINT) printf("Polygon %s with %d vertices reading completed!\n", polyName.c_str(), *size);
 }
 
 //

@@ -92,6 +92,13 @@ VERSIONS
 
 
 
+Special 6/29
+PPVertexPointers[pi]=V;
+// if(i==12381*2) cout<<PPVertexPointers[pi]->p.x<<", "<<PPVertexPointers[pi]->p.y<<" >> "<<V->p.x<<", "<<V->p.y<<endl;
+pi++;
+
+This was at the begining of the loop. But got error. Shifted to bottom
+
 P->ne_10m_ocean
 Q->ne_10m_land
 

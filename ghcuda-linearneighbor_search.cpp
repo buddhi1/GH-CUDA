@@ -18,15 +18,12 @@ string outputFile=string("results/Fig-def-R.poly");
 void readInputFromShapeFiles(double **polyPX, double **polyPY, double **polyQX, double **polyQY){
 	int PPID=0; //ne_10m_ocean
   string inputShp1=string("../datasets/ne_10m_ocean.csv");
+  string inputShp2=string("../datasets/ne_10m_land.csv");
   loadPolygonFromShapeFile2(PPTmp, inputShp1, PPID+1);
-
-  string inputShp2=string("../datasets/continents.csv");
-  int QQID=521; //continents
-	loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
-
-  // string inputShp2=string("../datasets/ne_10m_land.csv");
-  // int QQID=4; //ne_10m_land
+  // int QQID=521; //continents
 	// loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
+  int QQID=4; //ne_10m_land
+	loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
 
   if(DEBUG_INFO_PRINT){
     cout<<"Shape file1: "<<inputShp1<<" PPID: "<<PPID<<endl;;
@@ -161,11 +158,12 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
   double *cmbr;
   cmbr=(double *)malloc(4*sizeof(double));
   getCMBR(cmbr);
+  cout<<"cmbr "<<*(cmbr+0)<<", "<<*(cmbr+1)<<", "<<*(cmbr+2)<<", "<<*(cmbr+3)<<endl;
 
   calculateIntersections(
       polyPX, polyPY, 
       polyQX, polyQY, 
-      PP[0].size, QQ[0].size, cmbr, 
+      PP[0].size, QQ[0].size, 
       &countNonDegenIntP, &countNonDegenIntQ, 
       &intersectionsP, &intersectionsQ, &alphaValuesP, &alphaValuesQ,
       &initLabelsP, &initLabelsQ, 
@@ -176,19 +174,18 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
   // Polygon P: (PP)insert intersection vertices and change alpha value in the degenerate cases
   // -------------------------------------------------------------------------------------------
   int i=0, j=0, pi=0;
-  int intersectionPArrayMax=countNonDegenIntP*2;
-
-  PPVertexPointers=new vertex*[countNonDegenIntP];
+  // PPVertexPointers=new vertex*[countNonDegenIntP];
   // QQVertexPointers=new vertex*[countNonDegenIntQ];
-// cout <<"conondegen "<< countNonDegenIntP<< endl;
+
   // cout << "&& " << PP[0].root->next->p.x << "," << PP[0].root->prev->p.y << endl;
   // for (vertex* V : PP[0].vertices(ALL)){
   vertex* V=PP[0].root;
-  // do{
-  for(int ii=0; ii<=PP[0].size; ii++){
-    current=V;
 
-    while(*(intersectionsP+(i%intersectionPArrayMax))!=V->p.x || *(intersectionsP+((i+1)%intersectionPArrayMax))!=V->p.y){
+  // do{
+  for(int ii=0; ii<PP[0].size; ++ii){
+    // *(PPVertexPointers+pi++)=V;
+    current=V;
+    while(*(intersectionsP+i)!=V->p.x || *(intersectionsP+i+1)!=V->p.y){
       tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
       // tmpVertex->alpha=*(intersectionsP+i+2);
       tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/2)));
@@ -198,49 +195,37 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      PPVertexPointers[pi++]=tmpVertex;
+      // *(PPVertexPointers+pi++)=tmpVertex;
       // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->intersection << endl; 
       i+=2;
     }
-    if(ii<PP[0].size){ 
-      PPVertexPointers[pi]=V;
-      // if(i==12381*2) cout<<PPVertexPointers[pi]->p.x<<", "<<PPVertexPointers[pi]->p.y<<" >> "<<V->p.x<<", "<<V->p.y<<endl;
-      pi++;
-      // V->alpha=*(intersectionsP+i+2);
-      V->label=(IntersectionLabel)(*(initLabelsP+(i/2)));
-      // if(*(intersectionsP+i+2)!=-100){
-      if(*(alphaValuesP+(i/2))!=-100){
-        V->intersection=true;
-      }
+    // V->alpha=*(intersectionsP+i+2);
+    V->label=(IntersectionLabel)(*(initLabelsP+(i/2)));
+    // if(*(intersectionsP+i+2)!=-100){
+    if(*(alphaValuesP+(i/2))!=-100){
+      V->intersection=true;
     }
     // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->intersection << endl;
     i+=2;
     V=current->next;
   }
   // }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
-  // current=current->next;
-  // for(; i<countNonDegenIntP*2; i+=2){
-  //   tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
-  //   // tmpVertex->alpha=*(intersectionsP+i+2);
-  //   tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/2)));
-  //   tmpVertex->source=false;
-  //   tmpVertex->intersection=true;
-  //   tmpVertex->next=current;
-  //   current->prev->next=tmpVertex;
-  //   tmpVertex->prev=current->prev;
-  //   current->prev=tmpVertex;
-  //   *(PPVertexPointers+pi++)=tmpVertex;
-  //   // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
-  // }
+cout<<"doooo"<<endl;
+  current=current->next;
+  for(; i<countNonDegenIntP*2; i+=2){
+    tmpVertex=new vertex(*(intersectionsP+i), *(intersectionsP+i+1));
+    // tmpVertex->alpha=*(intersectionsP+i+2);
+    tmpVertex->label=(IntersectionLabel)(*(initLabelsP+(i/2)));
+    tmpVertex->source=false;
+    tmpVertex->intersection=true;
+    tmpVertex->next=current;
+    current->prev->next=tmpVertex;
+    tmpVertex->prev=current->prev;
+    current->prev=tmpVertex;
+    // *(PPVertexPointers+pi++)=tmpVertex;
+    // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+  }
   // -------------------------------------------------------------------------------------------
-// cout<<*(intersectionsP+12381*2)<<", "<<*(intersectionsP+12381*2+1)<<"\n\n*****************\n";
-// vertex* cc=PP[0].root;
-//   for(int c=0; c<12509; c++){
-//     if(PPVertexPointers[c]->p.x!=cc->p.x && PPVertexPointers[c]->p.y!=cc->p.y)
-//       cout<<c<<" > "<<PPVertexPointers[c]->p.x<<", "<<PPVertexPointers[c]->p.y<<" - "<<cc->p.x<<", "<<cc->p.y<<endl;
-//     cc=cc->next;
-//   }
-// cout<<"\n*****************\n\n";
 
   // -------------------------------------------------------------------------------------------
   // Polygon Q: (QQ)insert intersection vertices and change alpha value in the degenerate cases
@@ -248,11 +233,10 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
   i=0;
   // cout << "&&&& " << QQ[0].root->next->p.x << "," << QQ[0].root->prev->p.y << endl;
   V=QQ[0].root;
-  int intersectionQArrayMax=countNonDegenIntQ*2;
   // do{
-  for(int ii=0; ii<=QQ[0].size; ++ii){
+  for(int ii=0; ii<QQ[0].size; ++ii){
     current=V;
-    while(*(intersectionsQ+(i%intersectionQArrayMax))!=V->p.x || *(intersectionsQ+((i+1)%intersectionQArrayMax))!=V->p.y){
+    while(*(intersectionsQ+i)!=V->p.x || *(intersectionsQ+i+1)!=V->p.y){
       tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
       // tmpVertex->alpha=*(intersectionsQ+i+2);
       tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/2)));
@@ -262,23 +246,14 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
       current->prev->next=tmpVertex;
       tmpVertex->prev=current->prev;
       current->prev=tmpVertex;
-      tmpVertex->neighbour=PPVertexPointers[(*(neighborQ+(i/2)))-1];
-      PPVertexPointers[(*(neighborQ+(i/2)))-1]->neighbour=tmpVertex;
-      if(ii<10) cout<<(*(neighborQ+(i/2)))-1<<" *** "<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.x<<", "<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.y<<" >> "<<tmpVertex->p.x<<", "<<tmpVertex->p.y<<endl;
-    
       // cout << i << " " << tmpVertex->p.x << " // " << tmpVertex->p.y << " " << tmpVertex->alpha << endl; 
       i+=2;
     }
-    if(ii<QQ[0].size){
-      // V->alpha=*(intersectionsQ+i+2);
-      V->label=(IntersectionLabel)(*(initLabelsQ+(i/2)));
-      // if(*(intersectionsQ+i+2)!=-100){ 
-      if(*(alphaValuesQ+(i/2))!=-100){ 
-        V->intersection=true;
-        V->neighbour=PPVertexPointers[(*(neighborQ+(i/2)))-1];
-        PPVertexPointers[(*(neighborQ+(i/2)))-1]->neighbour=V;
-        // if(ii<10) cout<<(*(neighborQ+(i/2)))-1<<" -- "<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.x<<", "<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.y<<" >> "<<V->p.x<<", "<<V->p.y<<endl;
-      }
+    // V->alpha=*(intersectionsQ+i+2);
+    V->label=(IntersectionLabel)(*(initLabelsQ+(i/2)));
+    // if(*(intersectionsQ+i+2)!=-100){ 
+    if(*(alphaValuesQ+(i/2))!=-100){ 
+      V->intersection=true;
     }
     // cout << i << " " << V->p.x << " ** " << V->p.y << " " << V->alpha << endl;
     i+=2;
@@ -286,96 +261,45 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
   }
   // }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
 
-  // current=current->next;
-  // for(; i<countNonDegenIntQ*2; i+=2){
-  //   tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
-  //   // tmpVertex->alpha=*(intersectionsQ+i+2);
-  //   tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/2)));
-  //   tmpVertex->source=false;
-  //   tmpVertex->intersection=true;
-  //   tmpVertex->next=current;
-  //   current->prev->next=tmpVertex;
-  //   tmpVertex->prev=current->prev;
-  //   current->prev=tmpVertex;
-  //   tmpVertex->neighbour=(*PPVertexPointers+ *(neighborQ+(i/2)-1));
-  //   (*PPVertexPointers+ *(neighborQ+(i/2)-1))->neighbour=tmpVertex;
-  //   count2++;
-  //   // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
-  // }
-
+  current=current->next;
+  for(; i<countNonDegenIntQ*2; i+=2){
+    tmpVertex=new vertex(*(intersectionsQ+i), *(intersectionsQ+i+1));
+    // tmpVertex->alpha=*(intersectionsQ+i+2);
+    tmpVertex->label=(IntersectionLabel)(*(initLabelsQ+(i/2)));
+    tmpVertex->source=false;
+    tmpVertex->intersection=true;
+    tmpVertex->next=current;
+    current->prev->next=tmpVertex;
+    tmpVertex->prev=current->prev;
+    current->prev=tmpVertex;
+    // cout << tmpVertex->p.x << " >> " << tmpVertex->p.y << " " << tmpVertex->alpha << endl;
+  }
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
   // linking polygon P and Polygon Q with neighbor property
   // ******RULE: Each vertex will only have ONE NEIGHBOR
   // -------------------------------------------------------------------------------------------
-  //  cout << "\n\n-----------\n";
-  // int count=0;
-  // V=QQ[0].root;
-  // j=0;
-  // i=0;
-  // do{
-  //   if(*(neighborQ+i)!=0){
-  //     j++;
-  //     cout<<V->p.x<<", "<<V->p.y<<" "<< *(neighborQ+i)<<" i "<<i<<endl;
-  //     if(j<10) cout<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.x<<", "<<PPVertexPointers[(*(neighborQ+(i/2)))-1]->p.y<<" >> "<<V->p.x<<", "<<V->p.y<<endl;
-  //     V->neighbour=PPVertexPointers[(*(neighborQ+(i/2)))-1];
-  //     PPVertexPointers[(*(neighborQ+(i/2)))-1]->neighbour=V;
-  //     // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
-  //       // cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
-  //   }
-  //   V=V->next;
-  //   ++i;
-  // }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
-  // cout << "\n-----------\n";
- 
- 
- 
   // cout << "\n\n-----------\n";
-  // int count=0;
-  // V=QQ[0].root;
-  // vertex *VQ=PP[0].root;
-  // j=0;
-  // i=0;
-  // do{
-  //   if(*(neighborQ+i)!=0){
-  //     VQ=PP[0].root;
-  //     for(j=0; j<(*(neighborQ+i)-1); ++j){
-  //       VQ=VQ->next;
-  //     }
-  //     V->neighbour=VQ;
-  //     VQ->neighbour=V;
-  //     // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
-  //       // cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
-  //   }
-  //   V=V->next;
-  //   ++i;
-  // }while(V->p.x!=QQ[0].root->p.x || V->p.y!=QQ[0].root->p.y);
-  // cout << "\n-----------\n";
-
-
-
-
-  // cout << "\n\n-----------\n";
-  // int count=0;
-  // V=PP[0].root;
-  // vertex *VQ=QQ[0].root;
-  // j=0;
-  // i=0;
-  // do{
-  //   if(*(neighborP+i)!=0){
-  //     VQ=QQ[0].root;
-  //     for(j=0; j<(*(neighborP+i)-1); ++j){
-  //       VQ=VQ->next;
-  //     }
-  //     V->neighbour=VQ;
-  //     VQ->neighbour=V;
-  //     // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
-  //       // cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
-  //   }
-  //   V=V->next;
-  //   ++i;
-  // }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
+  int count=0;
+  V=PP[0].root;
+  vertex *VQ=QQ[0].root;
+  j=0;
+  i=0;
+  do{
+    if(*(neighborP+i)!=0){
+      VQ=QQ[0].root;
+      for(j=0; j<(*(neighborP+i)-1); ++j){
+        VQ=VQ->next;
+      }
+      V->neighbour=VQ;
+      VQ->neighbour=V;
+      // if(V->p.x != VQ->p.x &&  V->p.y != VQ->p.y )
+        // cout << count++ <<" neigh " << i << " " << j << " (" << V->p.x << "," << V->p.y << " | " << VQ->p.x << "," << VQ->p.y << ") " << V->label << endl;
+    }
+    V=V->next;
+    ++i;
+  }while(V->p.x!=PP[0].root->p.x || V->p.y!=PP[0].root->p.y);
   // cout << "\n-----------\n";
   // -------------------------------------------------------------------------------------------
   

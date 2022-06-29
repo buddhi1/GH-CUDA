@@ -5,7 +5,7 @@
 #include <thrust/scan.h>
 #include <cooperative_groups.h>
 
-#include "constants.h"
+#include "lib/constants.h"
 
 typedef struct{
   double x, y;
@@ -45,6 +45,18 @@ __device__ point mulScalar(const double c, const point& b){
   r.x=c*b.x;
   r.y=c*b.y;
   return r; 
+}
+
+// find min
+__device__ double getMin(double a, double b){
+  if(a<b) return a;
+  return b;
+}
+
+// find max
+__device__ double getMax(double a, double b){
+  if(a<b) return b;
+  return a;
 }
 
 /*
@@ -378,6 +390,34 @@ Return prefix sum arrays.
 Runs in GPU
 Called from Host
 -------------------------------------------------------------------
+*/
+__global__ void gpuCMBRFilter(
+                double *polyPX, double *polyPY, 
+                int sizeP, double *cmbr, int *boolPX){
+  id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
+  point P1, P2;
+  P1.x=poly1X[id];
+  P1.y=poly1Y[id];
+  P2.x=poly1X[(id+1)%sizeP];
+  P2.y=poly1Y[(id+1)%sizeP];
+
+  int minX=getMin(P1.x, P2.x), minY=getMin(P1.y, P2.y);
+  int maxX=getMax(P1.x, P2.x), maxY=getMax(P1.y, P2.y);
+
+  boolPX[id]=1;
+  if(minX>cmbr[2] || maxX<cmbr[0]) boolPX[id]=0;
+  if(minY>cmbr[3] || maxY<cmbr[1]) boolPX[id]=0;
+}
+/*
+-----------------------------------------------------------------
+Function to count all intersections. 
+Return prefix sum arrays.
+  *prefix sum of count of all intersection vertices x2 (P and Q)
+  *prefix sum of count of all intersection vertices excluding 
+   degenerate cases x2 (P and Q)
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
 *//*
 __global__ void gpuCountIntersections1(
                   double *polyPX, double *polyPY, 
@@ -623,14 +663,6 @@ __global__ void gpuCountIntersections(
     P1.y = polyPY[id];
     P2.x = polyPX[(id+1)%sizeP];
     P2.y = polyPY[(id+1)%sizeP];
-    // //polygon1 is P and polygon2 is Q
-    // if(id==sizeP-1){
-    //   P2.x = polyPX[0];
-    //   P2.y = polyPY[0];
-    // } else { //no need reset. Normal case
-    //   P2.x = polyPX[id+1];
-    //   P2.y = polyPY[id+1];
-    // }
   }
   for(int tileId=0; tileId<tiles; tileId++){
     size=MAX_POLY2_SIZE;
@@ -1395,17 +1427,20 @@ Called from Host
 void calculateIntersections(
                   double *polyPX, double *polyPY, 
                   double *polyQX,  double *polyQY, 
-                  int sizeP, int sizeQ, 
+                  int sizeP, int sizeQ, double *cmbr,
                   int *countNonDegenIntP, int *countNonDegenIntQ, 
                   double **intersectionsP, double **intersectionsQ, int **alphaValuesP, int **alphaValuesQ,
                   int **initLabelsP, int **initLabelsQ,
                   int **neighborP, int **neighborQ){
     double *dev_polyPX, *dev_polyPY, *dev_polyQX, *dev_polyQY;
-    int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2;
+    int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2, *dev_boolPsPX, *dev_boolPsQX, *dev_boolPX, *dev_boolQX;
     int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
+    int boolPsPX[sizeP+1], boolPsQX[sizeQ+1];
     cudaEvent_t kernelStart1, kernelStart2, kernelStart3, kernelStart4, kernelStart5, kernelStart6;
     cudaEvent_t kernelStop1, kernelStop2, kernelStop3, kernelStop4, kernelStop5, kernelStop6;
 
+    printf("cmbr %f %f %f %f\n",*(cmbr+0), *(cmbr+1), *(cmbr+2), *(cmbr+3));
+    
     // Phase1: Count intersections in each block. Create prefix sums to find local locations in each thread 
     // Allocate memory in device 
     if(DEBUG_TIMING){
@@ -1440,6 +1475,22 @@ void calculateIntersections(
     dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1);
     dim3 dimGridP(xBlocksPerGridP, yBlockPerGrid, 1); 
     dim3 dimGridQ(xBlocksPerGridQ, yBlockPerGrid, 1); 
+
+    // CMBR filter 
+    if(DEBUG_TIMING){
+        cudaEventCreate(&kernelStart0);
+        cudaEventCreate(&kernelStop0);
+    }
+    if(DEBUG_TIMING) cudaEventRecord(kernelStart0);
+    gpuCMBRFilter(
+                dev_polyQX, dev_polyQY, 
+                sizeP, cmbr, dev_boolPX);
+
+    if(DEBUG_TIMING) cudaEventRecord(kernelStop0);
+
+    if(DEBUG_TIMING) cudaEventSynchronize(kernelStop0);
+
+    cudaDeviceSynchronize();
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStart1);
       gpuCountIntersections<<<dimGridQ, dimBlock>>>(
@@ -1509,10 +1560,13 @@ void calculateIntersections(
     *countNonDegenIntP=psP2[sizeP];
     *countNonDegenIntQ=psQ2[sizeQ];
 
-    printf("Non-degen count P %d *****--- Q %d\n", *countNonDegenIntP-sizeP, *countNonDegenIntQ-sizeQ);
+    if(DEBUG_INFO_PRINT){
+      printf("Non-degen count P %d *****--- Q %d\n", *countNonDegenIntP-sizeP, *countNonDegenIntQ-sizeQ);
+      printf("Intersection count P %d *****--- Q %d\n", psP1[sizeP], psQ1[sizeQ]);
+    }
 
     dim3 dimGrid(xBlocksPerGrid, yBlockPerGrid, 1);
-    printf("blockDim %d gridDimx %d gridDimy %d\n", dimBlock.x, dimGrid.x, dimGrid.y);
+    // printf("blockDim %d gridDimx %d gridDimy %d\n", dimBlock.x, dimGrid.x, dimGrid.y);
 
     neighborMapQ=(int *)malloc(*countNonDegenIntQ*sizeof(int));
 
