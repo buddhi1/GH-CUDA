@@ -382,32 +382,67 @@ __device__ int isCMBRBetweenEdges(point P1, point P2, point Q1, point Q2){
 
 /*
 -----------------------------------------------------------------
-Function to count all intersections. 
+Function to check if edegs are intersecting with the CMBR
 Return prefix sum arrays.
-  *prefix sum of count of all intersection vertices x2 (P and Q)
-  *prefix sum of count of all intersection vertices excluding 
-   degenerate cases x2 (P and Q)
+  if a marked boolean array if the edges are intersecting with it
 Runs in GPU
 Called from Host
 -------------------------------------------------------------------
 */
 __global__ void gpuCMBRFilter(
-                double *polyPX, double *polyPY, 
-                int sizeP, double *cmbr, int *boolPX){
-  id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
+                double *polyX, double *polyY, 
+                double cmbrMinX, double cmbrMinY, double cmbrMaxX, double cmbrMaxY,
+                int size, int *boolPs, int *ps1, int *ps2){
+  int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
   point P1, P2;
-  P1.x=poly1X[id];
-  P1.y=poly1Y[id];
-  P2.x=poly1X[(id+1)%sizeP];
-  P2.y=poly1Y[(id+1)%sizeP];
+  P1.x=polyX[id];
+  P1.y=polyY[id];
+  P2.x=polyX[(id+1)%size];
+  P2.y=polyY[(id+1)%size];
 
   int minX=getMin(P1.x, P2.x), minY=getMin(P1.y, P2.y);
   int maxX=getMax(P1.x, P2.x), maxY=getMax(P1.y, P2.y);
 
-  boolPX[id]=1;
-  if(minX>cmbr[2] || maxX<cmbr[0]) boolPX[id]=0;
-  if(minY>cmbr[3] || maxY<cmbr[1]) boolPX[id]=0;
+  boolPs[id]=1;
+  ps1[id]=0;
+  ps2[id]=0;
+  if(minX>cmbrMaxX || maxX<cmbrMinX) boolPs[id]=0;
+  if(minY>cmbrMaxY || maxY<cmbrMinY) boolPs[id]=0;
+
+  // if(boolX[id]!=0) printf("/// %d\n", id);
 }
+
+/*
+-----------------------------------------------------------------
+Function to record all indicies which intersects with CMBR 
+Return prefix sum arrays.
+  index arrays
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
+*/
+__global__ void gpuSaveCMBRIntersectedIndicies(
+                double *polyX, double *polyY, 
+                double cmbrMinX, double cmbrMinY, double cmbrMaxX, double cmbrMaxY,
+                int size, int *boolPol, int *boolPs){
+  int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
+  point P1, P2;
+  P1.x=polyX[id];
+  P1.y=polyY[id];
+  P2.x=polyX[(id+1)%size];
+  P2.y=polyY[(id+1)%size];
+
+  int minX=getMin(P1.x, P2.x), minY=getMin(P1.y, P2.y);
+  int maxX=getMax(P1.x, P2.x), maxY=getMax(P1.y, P2.y);
+
+  int intersect=1;
+  if(minX>cmbrMaxX || maxX<cmbrMinX) intersect=0;
+  if(minY>cmbrMaxY || maxY<cmbrMinY) intersect=0;
+  if(intersect){
+    boolPol[boolPs[id]]=id;
+  }
+}
+
 /*
 -----------------------------------------------------------------
 Function to count all intersections. 
@@ -645,8 +680,8 @@ __global__ void gpuCountIntersections2(
 __global__ void gpuCountIntersections(
                   double *polyPX, double *polyPY, 
                   double *polyQX,  double *polyQY, 
-                  int sizeP, int sizeQ,
-                  int *psP1, int *psP2){
+                  int sizeP, int sizeP2, int sizeQ,
+                  int *psP1, int *psP2, int *boolPIndex){
   int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
   int idx=threadIdx.x;  
   __shared__ double poly2X_shared[MAX_POLY2_SIZE+1], poly2Y_shared[MAX_POLY2_SIZE+1] /*+1 for halo next*/;
@@ -659,10 +694,10 @@ __global__ void gpuCountIntersections(
   int tiles=(sizeQ+MAX_POLY2_SIZE-1)/MAX_POLY2_SIZE;
   int tileCellsPerThread=MAX_POLY2_SIZE/blockDim.x;
   if(id<sizeP){
-    P1.x = polyPX[id];
-    P1.y = polyPY[id];
-    P2.x = polyPX[(id+1)%sizeP];
-    P2.y = polyPY[(id+1)%sizeP];
+    P1.x = polyPX[boolPIndex[id]];
+    P1.y = polyPY[boolPIndex[id]];
+    P2.x = polyPX[(boolPIndex[id]+1)%sizeP];
+    P2.y = polyPY[(boolPIndex[id]+1)%sizeP];
   }
   for(int tileId=0; tileId<tiles; tileId++){
     size=MAX_POLY2_SIZE;
@@ -712,10 +747,10 @@ __global__ void gpuCountIntersections(
     } 
     __syncthreads();
   }
-  if(id<sizeP){
+  if(id<sizeP2){
     count2++; //represent the parent vertex 
-    psP1[id]=count1;
-    psP2[id]=count2; 
+    psP1[boolPIndex[id]]=count1;
+    psP2[boolPIndex[id]]=count2; 
   // printf("id %d %d %d \n", id, count1, count2);
   }
 }
@@ -1436,16 +1471,16 @@ void calculateIntersections(
     int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2, *dev_boolPsPX, *dev_boolPsQX, *dev_boolPX, *dev_boolQX;
     int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
     int boolPsPX[sizeP+1], boolPsQX[sizeQ+1];
-    cudaEvent_t kernelStart1, kernelStart2, kernelStart3, kernelStart4, kernelStart5, kernelStart6;
-    cudaEvent_t kernelStop1, kernelStop2, kernelStop3, kernelStop4, kernelStop5, kernelStop6;
+    cudaEvent_t kernelStart0, kernelStart1, kernelStart2, kernelStart3, kernelStart4, kernelStart5, kernelStart6, kernelStart7, kernelStart8;
+    cudaEvent_t kernelStop0, kernelStop1, kernelStop2, kernelStop3, kernelStop4, kernelStop5, kernelStop6, kernelStop7, kernelStop8;
 
     printf("cmbr %f %f %f %f\n",*(cmbr+0), *(cmbr+1), *(cmbr+2), *(cmbr+3));
     
     // Phase1: Count intersections in each block. Create prefix sums to find local locations in each thread 
     // Allocate memory in device 
     if(DEBUG_TIMING){
-        cudaEventCreate(&kernelStart1);
-        cudaEventCreate(&kernelStop1);
+        cudaEventCreate(&kernelStart0);
+        cudaEventCreate(&kernelStop0);
     }
     cudaMalloc((void **) &dev_polyPX, sizeP*sizeof(double));
     cudaMalloc((void **) &dev_polyPY, sizeP*sizeof(double));
@@ -1455,6 +1490,12 @@ void calculateIntersections(
     cudaMalloc((void **) &dev_psP2, (sizeP+1)*sizeof(int));
     cudaMalloc((void **) &dev_psQ1, (sizeQ+1)*sizeof(int));
     cudaMalloc((void **) &dev_psQ2, (sizeQ+1)*sizeof(int));
+
+    cudaMalloc((void **) &dev_boolPX, sizeP*sizeof(int));
+    cudaMalloc((void **) &dev_boolPsPX, (sizeP+1)*sizeof(int));
+    cudaMalloc((void **) &dev_boolQX, sizeQ*sizeof(int));
+    cudaMalloc((void **) &dev_boolPsQX, (sizeQ+1)*sizeof(int));
+
 
     // Copy input vectors from host memory to GPU buffers.
     cudaMemcpy(dev_polyPX, polyPX, sizeP*sizeof(double), cudaMemcpyHostToDevice);
@@ -1469,41 +1510,102 @@ void calculateIntersections(
     int xBlocksPerGridQ=(blocksPerGridQ + yBlockPerGrid - 1) / yBlockPerGrid;
     int blocksPerGridP=(sizeP + xThreadPerBlock - 1) / xThreadPerBlock;
     int xBlocksPerGridP=(blocksPerGridP + yBlockPerGrid - 1) / yBlockPerGrid;
-
-
+    
     // ******size_t number_of_blocks = N/threads_per_block + (size_t)(N % threads_per_block != 0);
     dim3 dimBlock(xThreadPerBlock, yThreadPerBlock, 1);
     dim3 dimGridP(xBlocksPerGridP, yBlockPerGrid, 1); 
     dim3 dimGridQ(xBlocksPerGridQ, yBlockPerGrid, 1); 
 
+
     // CMBR filter 
-    if(DEBUG_TIMING){
-        cudaEventCreate(&kernelStart0);
-        cudaEventCreate(&kernelStop0);
-    }
+
     if(DEBUG_TIMING) cudaEventRecord(kernelStart0);
-    gpuCMBRFilter(
+    gpuCMBRFilter<<<dimGridP, dimBlock>>>(
+                dev_polyPX, dev_polyPY, 
+                cmbr[0], cmbr[1], cmbr[2], cmbr[3],
+                sizeP, dev_boolPsPX, dev_psP1, dev_psP2);
+    gpuCMBRFilter<<<dimGridQ, dimBlock>>>(
                 dev_polyQX, dev_polyQY, 
-                sizeP, cmbr, dev_boolPX);
+                cmbr[0], cmbr[1], cmbr[2], cmbr[3],
+                sizeQ, dev_boolPsQX, dev_psQ1, dev_psQ2);
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStop0);
 
     if(DEBUG_TIMING) cudaEventSynchronize(kernelStop0);
 
     cudaDeviceSynchronize();
+    cudaMemcpy(&boolPsPX, dev_boolPsPX, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&boolPsQX, dev_boolPsQX, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
+
+    // for(int ii=0; ii<sizeP; ++ii){
+    //   if(boolPsPX[ii]!=0) printf("*== %d\n", boolPsPX[ii]);
+    // }
+
+    if(DEBUG_TIMING){
+        cudaEventCreate(&kernelStart7);
+        cudaEventCreate(&kernelStop7);
+    }
+    if(DEBUG_TIMING) cudaEventRecord(kernelStart7);
+    thrust::exclusive_scan(thrust::host, boolPsPX, boolPsPX + sizeP+1, boolPsPX);   
+    thrust::exclusive_scan(thrust::host, boolPsQX, boolPsQX + sizeQ+1, boolPsQX);   
+    if(DEBUG_TIMING) cudaEventRecord(kernelStop7);
+
+    if(DEBUG_TIMING) cudaEventSynchronize(kernelStop7);
+
+    cudaDeviceSynchronize();
+
+    if(DEBUG_TIMING){
+        cudaEventCreate(&kernelStart8);
+        cudaEventCreate(&kernelStop8);
+    }
+    cudaMemcpy(dev_boolPsPX, boolPsPX, (sizeP+1)*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_boolPsQX, boolPsQX, (sizeQ+1)*sizeof(int), cudaMemcpyHostToDevice);
+
+    if(DEBUG_TIMING) cudaEventRecord(kernelStart8);
+
+    gpuSaveCMBRIntersectedIndicies<<<dimGridP, dimBlock>>>(
+            dev_polyPX, dev_polyPY, 
+            cmbr[0], cmbr[1], cmbr[2], cmbr[3],
+            sizeP, dev_boolPX, dev_boolPsPX);
+
+    gpuSaveCMBRIntersectedIndicies<<<dimGridQ, dimBlock>>>(
+            dev_polyQX, dev_polyQY, 
+            cmbr[0], cmbr[1], cmbr[2], cmbr[3],
+            sizeQ, dev_boolQX, dev_boolPsQX);
+
+    if(DEBUG_TIMING) cudaEventRecord(kernelStop8);
+
+    if(DEBUG_TIMING) cudaEventSynchronize(kernelStop8);
+    cudaDeviceSynchronize();
+
+    int sizeP2=boolPsPX[sizeP], sizeQ2=boolPsQX[sizeQ];
+    printf("** %d %d\n", sizeP, sizeP2);
+    printf("**/ %d %d\n", sizeQ, sizeQ2);
+
+    int blocksPerGridP2=(sizeP2 + xThreadPerBlock - 1) / xThreadPerBlock;
+    int blocksPerGridQ2=(sizeQ2 + xThreadPerBlock - 1) / xThreadPerBlock;
+    int xBlocksPerGridP2=(blocksPerGridP2 + yBlockPerGrid - 1) / yBlockPerGrid;
+    int xBlocksPerGridQ2=(blocksPerGridQ2 + yBlockPerGrid - 1) / yBlockPerGrid;
+    dim3 dimGridP2(xBlocksPerGridP2, yBlockPerGrid, 1); 
+    dim3 dimGridQ2(xBlocksPerGridQ2, yBlockPerGrid, 1); 
+
+    if(DEBUG_TIMING){
+        cudaEventCreate(&kernelStart1);
+        cudaEventCreate(&kernelStop1);
+    }
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStart1);
-      gpuCountIntersections<<<dimGridQ, dimBlock>>>(
+      gpuCountIntersections<<<dimGridQ2, dimBlock>>>(
             dev_polyQX, dev_polyQY, 
             dev_polyPX, dev_polyPY, 
-            sizeQ, sizeP,
-            dev_psQ1, dev_psQ2);
+            sizeQ, sizeQ2, sizeP,
+            dev_psQ1, dev_psQ2, dev_boolQX);
       
-      gpuCountIntersections<<<dimGridP, dimBlock>>>(
+      gpuCountIntersections<<<dimGridP2, dimBlock>>>(
             dev_polyPX, dev_polyPY, 
             dev_polyQX, dev_polyQY, 
-            sizeP, sizeQ,
-            dev_psP1, dev_psP2);
+            sizeP, sizeP2, sizeQ,
+            dev_psP1, dev_psP2, dev_boolPX);
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
 
