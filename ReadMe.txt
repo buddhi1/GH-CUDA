@@ -74,15 +74,15 @@ ERROR
     PROGRESS: fixed
 
 TO DO CODE
-1. Shared memory usage
-2. CMBR filter using GPU
-3. Point-in-polygon test GPU
-4. manage when size of PP or QQ >0 WORKING ON THIS
+1. Shared memory usage - Done
+2. CMBR filter using GPU - Have 2 version only bool array and reduced block size
+3. Point-in-polygon test GPU - Not touched
+4. manage when size of PP or QQ >0 not done
 5. Since we have neighbor map and exact locations of neighbor location in the array, we should
     be able to run intersection calculation using max(m,n) processors in mim(m,n) time by 
-    removing seperate section for Q info handling. 
-6. Parallelize later parts using OpenMP or pthread
-7. Optimization: If prefix sum of the given id is 0, no need to run the kernel for that pid
+    removing seperate section for Q info handling. - Done
+6. Parallelize later parts using OpenMP or pthread - We have time to work on this just to reduce overall time. But cannot talk about it in the paper
+7. Optimization: If prefix sum of the given id is 0, no need to run the kernel for that pid - Done
 
 
 

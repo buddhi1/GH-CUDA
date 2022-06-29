@@ -730,6 +730,7 @@ __global__ void gpuCountIntersections(
       // for(int qid=0; qid<size; qid++){  
         Q1.x = poly2X_shared[qid];
         Q1.y = poly2Y_shared[qid];
+
         // reset P2 vertex of last edge to first vertex
         if(tileId==tiles-1 && qid==size-1){
           Q2.x=polyQX[0];
@@ -756,6 +757,7 @@ __global__ void gpuCountIntersections(
     count2++; //represent the parent vertex 
     psP1[id]=count1;
     psP2[id]=count2; 
+  // printf("id %d %d %d \n", id, count1, count2);
   }
 }
 
@@ -781,6 +783,11 @@ __global__ void gpuCountIntersections1(
     P1.y = polyPY[boolPIndex[id]];
     P2.x = polyPX[(boolPIndex[id]+1)%sizeP];
     P2.y = polyPY[(boolPIndex[id]+1)%sizeP];
+
+    // P1.x = polyPX[id];
+    // P1.y = polyPY[id];
+    // P2.x = polyPX[(id+1)%sizeP];
+    // P2.y = polyPY[(id+1)%sizeP];
   }
   for(int tileId=0; tileId<tiles; tileId++){
     size=MAX_POLY2_SIZE;
@@ -790,6 +797,7 @@ __global__ void gpuCountIntersections1(
       qid=0;
     }
     for(int localId=0; localId<tileCellsPerThread; ++localId){
+        // if(id==3) printf("val %d %f\n", (blockDim.x*localId), polyQY[(blockDim.x*localId)+(tileId*MAX_POLY2_SIZE)]);
       if(tileId!=tiles-1 || (tileId==tiles-1 && idx<size)){
         // load data into shared memory collaboratively
         poly2X_shared[idx+(blockDim.x*localId)]=polyQX[idx+(blockDim.x*localId)+(tileId*MAX_POLY2_SIZE)];
@@ -802,6 +810,7 @@ __global__ void gpuCountIntersections1(
     } 
     __syncthreads();
     for(int qCount=0; qCount<size; qid=((qid+1)%size), ++qCount){   
+    // for(int qid=0; qid<size; qid++){  
       Q1.x = poly2X_shared[qid];
       Q1.y = poly2Y_shared[qid];
 
@@ -813,16 +822,19 @@ __global__ void gpuCountIntersections1(
         Q2.x=poly2X_shared[qid+1];
         Q2.y=poly2Y_shared[qid+1];
       }
-      // if MBRs of two edges does not have a CMBR, there cannot be any intersection at all
-      if(isCMBRBetweenEdges(P1, P2, Q1, Q2)){
-        // determine intersection or overlap type
-        int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-        // if(id==3)  printf("/sp 3// %d %d %d(%f %f) (%f %f) %d\n", id, tileId, qid, P1.x, P1.y, Q1.x, Q1.y, i);
-        if(i!=0){
-          // printf("/// %d %d (%f %f) (%f %f)\n", id, i, P1.x, P1.y, Q1.x, Q1.y);
-          count1++;
-          if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
-            count2++;
+      // if(boolPIndex[id])
+      {
+        // if MBRs of two edges does not have a CMBR, there cannot be any intersection at all
+        if(isCMBRBetweenEdges(P1, P2, Q1, Q2)){
+          // determine intersection or overlap type
+          int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+          // if(id==3)  printf("/sp 3// %d %d %d(%f %f) (%f %f) %d\n", id, tileId, qid, P1.x, P1.y, Q1.x, Q1.y, i);
+          if(i!=0){
+            // printf("/// %d %d (%f %f) (%f %f)\n", id, i, P1.x, P1.y, Q1.x, Q1.y);
+            count1++;
+            if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7)))
+              count2++;
+          }
         }
       }
     } 
@@ -832,6 +844,9 @@ __global__ void gpuCountIntersections1(
     count2++; //represent the parent vertex 
     psP1[boolPIndex[id]]=count1;
     psP2[boolPIndex[id]]=count2; 
+    // psP1[id]=count1;
+    // psP2[id]=count2; 
+  // printf("id %d %d %d \n", id, count1, count2);
   }
 }
 
@@ -935,12 +950,92 @@ __global__ void gpuCountIntersections1(
 //   }
 // }
 
+/*
+-----------------------------------------------------------------
+Function to neighbor map intersections. 
+Return prefix sum arrays.
+  *neighbor map all intersection vertices x2 (P and Q)
+Runs in GPU
+Called from Host
+-------------------------------------------------------------------
+*//*
+__global__ void gpuNeighborMap1(
+                  double *polyPX, double *polyPY, 
+                  double *polyQX,  double *polyQY, 
+                  int sizeP, int sizeQ, 
+                  int *psP2, int *psQ2,
+                  int *neighborMapP, int *neighborMapQ){
+  int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
+  double alpha;
+  double beta;
+  point I;
+  int count1=0, count2=0, size=sizeQ, nonDegenCount=0;
+  double *poly1X=polyPX, *poly1Y=polyPY, *poly2X=polyQX, *poly2Y=polyQY;
+
+  // if(id>=sizeP+sizeQ) return;
+  if(id>=(sizeP+sizeQ) || id<sizeP) return;
+  point P1, P2, Q1, Q2;
+  int pid=id;
+  if(id>=sizeP){
+    size=sizeP;
+    poly1X=polyQX; 
+    poly1Y=polyQY; 
+    poly2X=polyPX;
+    poly2Y=polyPY;
+    pid=id-sizeP;
+    neighborMapQ[psQ2[pid]+count2]=-100;   
+  }else{
+    neighborMapP[psP2[pid]+count2]=-100;
+  }
+  P1.x = poly1X[pid];
+  P1.y = poly1Y[pid];
+  //polygon1 is P and polygon2 is Q
+  if(pid==id && pid==sizeP-1){
+    P2.x = poly1X[0];
+    P2.y = poly1Y[0];
+  }else if(pid!=id && pid == sizeQ-1){ //polygon2 is P and polygon1 is Q
+    P2.x = poly1X[0];
+    P2.y = poly1Y[0];
+  } else { //no need reset. Normal case
+    P2.x = poly1X[pid+1];
+    P2.y = poly1Y[pid+1];
+  }
+  for(int qid=0; qid<size; qid++){
+    Q1.x = poly2X[qid];
+    Q1.y = poly2Y[qid];
+    Q2.x = poly2X[qid+1];
+    Q2.y = poly2Y[qid+1];
+
+    // reset P2 vertex of last edge to first vertex
+    if(qid == size-1){
+      Q2.x = poly2X[0];
+      Q2.y = poly2Y[0];
+    }
+    // determine intersection or overlap type
+    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+    if(i!=0){
+      count1++;
+      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7))){
+        nonDegenCount++;
+        count2=nonDegenCount;
+      }
+      else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
+        count2=0;
+      if(id<sizeP){        
+        neighborMapP[psP2[pid]+count2]=qid;
+      }else{
+        neighborMapQ[psQ2[pid]+count2]=qid;
+      }
+    }
+  }
+}*/
+
 __global__ void gpuNeighborMap(
                   double *polyPX, double *polyPY, 
                   double *polyQX,  double *polyQY, 
                   int sizeP, int sizeQ, 
                   int *psP1, int *psQ1, int *psQ2,
-                  int *neighborMapQ, int *boolQIndex){
+                  int *neighborMapQ){
   int id=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
   double alpha;
   double beta;
@@ -952,41 +1047,34 @@ __global__ void gpuNeighborMap(
   neighborMapQ[psQ2[id]+count2]=-100;  
   // check if the current edge has any intersections. If not return
   // printf("id %d %d %d \n", id, psQ1[id], psQ1[id+1]);
-  // CMBR filter: check if the edge intersect with CMBR (from boolPIndex)
-  // prefix sum filter: check if the current edge has any intersection count
-  // if(boolQIndex[id] && psQ1[id+1]!=psQ1[id]){
-  if(psQ1[id+1]!=psQ1[id]){
-    point P1, P2, Q1, Q2;
+  if(psQ1[id+1]==psQ1[id]) {return;}
+  point P1, P2, Q1, Q2;
 
-    P1.x = polyQX[id];
-    P1.y = polyQY[id];
-    P2.x = polyQX[(id+1)%sizeQ];
-    P2.y = polyQY[(id+1)%sizeQ];
+  P1.x = polyQX[id];
+  P1.y = polyQY[id];
+  P2.x = polyQX[(id+1)%sizeQ];
+  P2.y = polyQY[(id+1)%sizeQ];
 
-    for(int qid=0; qid<sizeP; qid++){
-      // prefix sum filter: check if the current edge has any intersection count      
-      if(psP1[qid+1]!=psP1[qid]){
-        Q1.x = polyPX[qid];
-        Q1.y = polyPY[qid];
-        Q2.x = polyPX[(qid+1)%sizeP];
-        Q2.y = polyPY[(qid+1)%sizeP];
+  for(int qid=0; qid<sizeP; qid++){
+    // if current edges does not intersect, continue
+    if(psP1[qid+1]==psP1[qid]) continue;
+    Q1.x = polyPX[qid];
+    Q1.y = polyPY[qid];
+    Q2.x = polyPX[(qid+1)%sizeP];
+    Q2.y = polyPY[(qid+1)%sizeP];
 
-        if(isCMBRBetweenEdges(P1, P2, Q1, Q2)){
-          // determine intersection or overlap type
-          int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-          if(i!=0){
-            count1++;
-            if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7))){
-              nonDegenCount++;
-              count2=nonDegenCount;
-            }
-            else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
-              count2=0;
-
-            neighborMapQ[psQ2[id]+count2]=qid;      
-          }
-        }
+    // determine intersection or overlap type
+    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+    if(i!=0){
+      count1++;
+      if((id<sizeP && (i==1 || i==3 || i==5 || i==7)) || (id>=sizeP && (i==1 || i==3 || i==5 || i==7))){
+        nonDegenCount++;
+        count2=nonDegenCount;
       }
+      else if((id<sizeP && (i==2 || i==4 || i==6 || i==8)) || (id>=sizeP && (i==2 || i==4 || i==6 || i==8)))
+        count2=0;
+
+      neighborMapQ[psQ2[id]+count2]=qid;      
     }
   }
 }
@@ -1295,163 +1383,158 @@ __global__ void gpuCalculateIntersections(
     intersectionsQ2[psQ2[pid]*2+1]=polyQY[pid];
   }
 
-  // prefix sum filter: check if the current edge has any intersection count      
-  if(psP1[id+1]!=psP1[id]){
+  // check if the current edge has any intersections. If not return
+  if(psP1[id+1]==psP1[id]) return;
 
-    P1.x = polyPX[pid];
-    P1.y = polyPY[pid];
-    P2.x = polyPX[(pid+1)%sizeP];
-    P2.y = polyPY[(pid+1)%sizeP];
+  P1.x = polyPX[pid];
+  P1.y = polyPY[pid];
+  P2.x = polyPX[(pid+1)%sizeP];
+  P2.y = polyPY[(pid+1)%sizeP];
 
-    for(int qid=0; qid<sizeQ; qid++){
-      // prefix sum filter: check if the current edge has any intersection count      
-      if(psQ1[qid+1]!=psQ1[qid]){
-        Q1.x = polyQX[qid];
-        Q1.y = polyQY[qid];
-        Q2.x = polyQX[(qid+1)%sizeQ];
-        Q2.y = polyQY[(qid+1)%sizeQ];
+  for(int qid=0; qid<sizeQ; qid++){
+    // if current edges does not intersect, continue
+    if(psQ1[qid+1]==psQ1[qid]) continue;
+    Q1.x = polyQX[qid];
+    Q1.y = polyQY[qid];
+    Q2.x = polyQX[(qid+1)%sizeQ];
+    Q2.y = polyQY[(qid+1)%sizeQ];
 
-        if(isCMBRBetweenEdges(P1, P2, Q1, Q2)){
-          // determine intersection or overlap type
-          int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
-          if(i){
-            count1++;
-            if(i==1 || i==3 || i==5 || i==7){
-              nonDegenCount++;
-              count2=nonDegenCount;
-            }
-            else if(i==2 || i==4 || i==6 || i==8)
-              count2=0;
-            start=psQ2[qid];
-            end=psQ2[qid+1];
+    // determine intersection or overlap type
+    int i = getIntersectType(P1, P2, Q1, Q2, alpha, beta);
+    if(i){
+      count1++;
+      if(i==1 || i==3 || i==5 || i==7){
+        nonDegenCount++;
+        count2=nonDegenCount;
+      }
+      else if(i==2 || i==4 || i==6 || i==8)
+        count2=0;
+      start=psQ2[qid];
+      end=psQ2[qid+1];
 
-            if(i!=5){
-              // local search to find the index of qid
-              for(localI=start; localI<end; ++localI){
-                if(pid==neighborMapQ[localI]){
-                  neighborQId=localI;
-                  neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  localI=end+2; // break; 
-                }
-              }
-            }else{
-              neighborQId=start;
-              neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-              neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-              neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
-              neighborQ2[neighborQId]=psP2[pid]+count2+1;
-              
-              for(localI=start; localI<end; ++localI){
-                if(pid==neighborMapQ[localI]){
-                  neighborQId=localI;
-                  neighborP[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborP2[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborQ[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  neighborQ2[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
-                  localI=end+2; // break; 
-                }
-              }
-            }
-            switch(i) {
-              // case X_INTERSECTION:
-              // I and I
-              case 1:
-                I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
-                intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-                intersectionsP[(psP2[pid]+count2)*2+1]=I.y;
-                intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
-                intersectionsP2[(psP2[pid]+count2)*2+1]=I.y;
-                alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-
-                intersectionsQ[neighborQId*2]=I.x;       //consider edge for the intersection array
-                intersectionsQ[neighborQId*2+1]=I.y;
-                intersectionsQ2[neighborQId*2]=I.x;       //consider edge for the intersection array
-                intersectionsQ2[neighborQId*2+1]=I.y;
-                alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
-                break;
-              // X-overlap
-              // P1 and I(=P1 I is in Q)
-              // I(=Q1 I is in P) and Q1
-              case 5:
-                intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
-                intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
-                intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
-                intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
-                alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-
-                intersectionsQ[neighborQId*2]=P1.x;    
-                intersectionsQ[neighborQId*2+1]=P1.y;
-                intersectionsQ2[neighborQId*2]=P1.x;    
-                intersectionsQ2[neighborQId*2+1]=P1.y;
-                alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
-                break;
-              // case T_INTERSECTION_Q:
-              // case T_OVERLAP_Q:
-              // P1 and I(=P1 is in Q)
-              case 2:
-              case 6:
-                alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-
-                intersectionsQ[neighborQId*2]=P1.x;
-                intersectionsQ[neighborQId*2+1]=P1.y;
-                intersectionsQ2[neighborQId*2]=P1.x;
-                intersectionsQ2[neighborQId*2+1]=P1.y;
-                alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
-              break;
-              // case T_INTERSECTION_P:
-              // case T_OVERLAP_P:
-              // I(=Q1 is in P) and Q1
-              case 3:
-              case 7:
-                intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
-                intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
-                intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
-                intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
-                alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-
-                alphaValuesQ[psQ2[qid]]=(int)pow(10, EPSILON_POSITIONS)*beta;
-                break;
-              // case V_INTERSECTION:
-              // case V_OVERLAP:
-              // P1 and Q1
-              case 4:
-              case 8:
-                alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
-                
-                alphaValuesQ[psQ2[qid]]=(int)pow(10, EPSILON_POSITIONS)*beta;
-                break;
-            } 
-          } 
+      if(i!=5){
+        // local search to find the index of qid
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            localI=end+2; // break; 
+          }
+        }
+      }else{
+        neighborQId=start;
+        neighborP[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborP2[psP2[pid]+count2]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ[neighborQId]=psP2[pid]+count2+1;   //+1 acting as a padding and helps to identify 0 being empty 
+        neighborQ2[neighborQId]=psP2[pid]+count2+1;
+        
+        for(localI=start; localI<end; ++localI){
+          if(pid==neighborMapQ[localI]){
+            neighborQId=localI;
+            neighborP[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborP2[psP2[pid]]=neighborQId+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            neighborQ2[neighborQId]=psP2[pid]+1;   //+1 acting as a padding and helps to identify 0 being empty 
+            localI=end+2; // break; 
+          }
         }
       }
-    }
-  
-    // --------------------------------------------------------------------------------------------
-    // local sort for each edge, start to end
-    // --------------------------------------------------------------------------------------------
-    start=psP2[pid];
-    end=psP2[pid+1];
-    // sort intersection vertices in this edge locally
-    if((end-start)>2){
-      gpuRadixsort(alphaValuesP, tmpBucketP, alphaSortedIndiciesP, start+1, end);
-      // using sorted index array, change intersection locations in the array and neighbors
-      // decending order JUST FOR TESING
-      // for(int i=start+1, j=end-1; i<end; ++i, j--){
-      // acending order of alpha values 
-      for(int i=start+1, j=start+1; i<end; i++, j++){
-        alphaValuesP[i]=tmpBucketP[j];
-        intersectionsP[i*2]=intersectionsP2[alphaSortedIndiciesP[j]*2];
-        intersectionsP[i*2+1]=intersectionsP2[alphaSortedIndiciesP[j]*2+1];
-        neighborP[i]=neighborP2[alphaSortedIndiciesP[j]];
-        neighborQ[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //+1 is the padding. When reading do -1
-        neighborQ2[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //updates neighborQ2 as the new original to be used with sorted Q array
+      switch(i) {
+        // case X_INTERSECTION:
+        // I and I
+        case 1:
+          I = add(mulScalar((1.0-alpha), P1), mulScalar(alpha, P2));
+          intersectionsP[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
+          intersectionsP[(psP2[pid]+count2)*2+1]=I.y;
+          intersectionsP2[(psP2[pid]+count2)*2]=I.x;       //consider edge for the intersection array
+          intersectionsP2[(psP2[pid]+count2)*2+1]=I.y;
+          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+
+          intersectionsQ[neighborQId*2]=I.x;       //consider edge for the intersection array
+          intersectionsQ[neighborQId*2+1]=I.y;
+          intersectionsQ2[neighborQId*2]=I.x;       //consider edge for the intersection array
+          intersectionsQ2[neighborQId*2+1]=I.y;
+          alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
+          break;
+        // X-overlap
+        // P1 and I(=P1 I is in Q)
+        // I(=Q1 I is in P) and Q1
+        case 5:
+          intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
+          intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
+          intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
+          intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
+          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+
+          intersectionsQ[neighborQId*2]=P1.x;    
+          intersectionsQ[neighborQId*2+1]=P1.y;
+          intersectionsQ2[neighborQId*2]=P1.x;    
+          intersectionsQ2[neighborQId*2+1]=P1.y;
+          alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
+          break;
+        // case T_INTERSECTION_Q:
+        // case T_OVERLAP_Q:
+        // P1 and I(=P1 is in Q)
+        case 2:
+        case 6:
+          alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+
+          intersectionsQ[neighborQId*2]=P1.x;
+          intersectionsQ[neighborQId*2+1]=P1.y;
+          intersectionsQ2[neighborQId*2]=P1.x;
+          intersectionsQ2[neighborQId*2+1]=P1.y;
+          alphaValuesQ[neighborQId]=(int)pow(10, EPSILON_POSITIONS)*beta;
+        break;
+        // case T_INTERSECTION_P:
+        // case T_OVERLAP_P:
+        // I(=Q1 is in P) and Q1
+        case 3:
+        case 7:
+          intersectionsP[(psP2[pid]+count2)*2]=Q1.x;
+          intersectionsP[(psP2[pid]+count2)*2+1]=Q1.y;
+          intersectionsP2[(psP2[pid]+count2)*2]=Q1.x;
+          intersectionsP2[(psP2[pid]+count2)*2+1]=Q1.y;
+          alphaValuesP[psP2[pid]+count2]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+
+          alphaValuesQ[psQ2[qid]]=(int)pow(10, EPSILON_POSITIONS)*beta;
+          break;
+        // case V_INTERSECTION:
+        // case V_OVERLAP:
+        // P1 and Q1
+        case 4:
+        case 8:
+          alphaValuesP[psP2[pid]]=(int)pow(10, EPSILON_POSITIONS)*alpha;
+          
+          alphaValuesQ[psQ2[qid]]=(int)pow(10, EPSILON_POSITIONS)*beta;
+          break;
       } 
     } 
-  // --------------------------------------------------------------------------------------------
   }
+  // --------------------------------------------------------------------------------------------
+  // local sort for each edge, start to end
+  // --------------------------------------------------------------------------------------------
+  start=psP2[pid];
+  end=psP2[pid+1];
+  // sort intersection vertices in this edge locally
+  if((end-start)>2){
+    gpuRadixsort(alphaValuesP, tmpBucketP, alphaSortedIndiciesP, start+1, end);
+    // using sorted index array, change intersection locations in the array and neighbors
+    // decending order JUST FOR TESING
+    // for(int i=start+1, j=end-1; i<end; ++i, j--){
+    // acending order of alpha values 
+    for(int i=start+1, j=start+1; i<end; i++, j++){
+      alphaValuesP[i]=tmpBucketP[j];
+      intersectionsP[i*2]=intersectionsP2[alphaSortedIndiciesP[j]*2];
+      intersectionsP[i*2+1]=intersectionsP2[alphaSortedIndiciesP[j]*2+1];
+      neighborP[i]=neighborP2[alphaSortedIndiciesP[j]];
+      neighborQ[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //+1 is the padding. When reading do -1
+      neighborQ2[neighborP2[alphaSortedIndiciesP[j]]-1]=i+1; //updates neighborQ2 as the new original to be used with sorted Q array
+    } 
+  } 
+  // --------------------------------------------------------------------------------------------
 }
 
 /*
@@ -1819,7 +1902,7 @@ void calculateIntersections(
             dev_polyQX, dev_polyQY, 
             sizeP, sizeQ,  
             dev_psP1, dev_psQ1, dev_psQ2,
-            dev_neighborMapQ, dev_boolPsQX);
+            dev_neighborMapQ);
     if(DEBUG_TIMING) cudaEventRecord(kernelStop3);
   
 // -----------------------------------------------------------------------------------------------------
