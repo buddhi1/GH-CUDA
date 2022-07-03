@@ -15,29 +15,36 @@ int argn;
 string outputFile=string("results/Fig-def-R.poly");
 
 // read from shape files
-void readInputFromShapeFiles(double **polyPX, double **polyPY, double **polyQX, double **polyQY){
-	int PPID=0; //ne_10m_ocean
-  string inputShp1=string("../datasets/ne_10m_ocean.csv");
-  loadPolygonFromShapeFile2(PPTmp, inputShp1, PPID+1);
+void readInputFromShapeFiles(double **polyPX, double **polyPY, double **polyQX, double **polyQY, string inputShp1, int PPID, string inputShp2, int QQID){
+  int sizeP=PPTmp[PPID].size, sizeQ=QQTmp[QQID].size;
+  if(sizeP<sizeQ){
+    PP.push_back(QQTmp[QQID]);
+    QQ.push_back(PPTmp[PPID]);
+    sizeP=QQTmp[QQID].size;
+    sizeQ=PPTmp[PPID].size;
 
-  string inputShp2=string("../datasets/ne_10m_land.csv");
-  int QQID=4; //ne_10m_land
-	loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
+    if(DEBUG_INFO_PRINT){
+      cout<<"Shape file1: "<<inputShp1<<" PPID: "<<PPID<<endl;;
+      cout<<"Shape file2: "<<inputShp2<<" QQID: "<<QQID<<endl;
+      cout << "PP and QQ swapped since QQ> PP\nNew PP Polygon size " << sizeP;
+      cout << " New QQ Polygon size " << sizeQ << endl;
+    }
+  } else {
+    PP.push_back(PPTmp[PPID]);
+    QQ.push_back(QQTmp[QQID]);
 
-  if(DEBUG_INFO_PRINT){
-    cout<<"Shape file1: "<<inputShp1<<" PPID: "<<PPID<<endl;;
-    cout<<"Shape file2: "<<inputShp2<<" QQID: "<<QQID<<endl;
-    cout << "PP Polygon size " << PPTmp[PPID].size;
-    cout << " QQ Polygon size " << QQTmp[QQID].size << endl;
+    if(DEBUG_INFO_PRINT){
+      cout<<"Shape file1: "<<inputShp1<<" PPID: "<<PPID<<endl;;
+      cout<<"Shape file2: "<<inputShp2<<" QQID: "<<QQID<<endl;
+      cout << "PP Polygon size " << sizeP;
+      cout << " QQ Polygon size " << sizeQ << endl;
+    }
   }
 
-  PP.push_back(PPTmp[PPID]);
-  QQ.push_back(QQTmp[QQID]);
-
-  *polyPX=(double *)malloc(PPTmp[PPID].size*sizeof(double));
-  *polyPY=(double *)malloc(PPTmp[PPID].size*sizeof(double));
-  *polyQX=(double *)malloc(QQTmp[QQID].size*sizeof(double));
-  *polyQY=(double *)malloc(QQTmp[QQID].size*sizeof(double));
+  *polyPX=(double *)malloc(sizeP*sizeof(double));
+  *polyPY=(double *)malloc(sizeP*sizeof(double));
+  *polyQX=(double *)malloc(sizeQ*sizeof(double));
+  *polyQY=(double *)malloc(sizeQ*sizeof(double));
 
   int i=0;
   // copy polygon P values
@@ -61,20 +68,37 @@ void getCMBR(double *cmbr){
   vector<double> PPMBR;
   vector<double> QQMBR;
   // double *cmbr; //minx, miny, maxx, maxy
+  double minX, minY, maxX, maxY;
 
   PPMBR=getMBR(PP[0]);
   QQMBR=getMBR(QQ[0]);
+
+  // check intersection between MBRs
+  if(PPMBR[0]>QQMBR[2] || PPMBR[2]<QQMBR[0]){
+    printf("No Overlap between polygons\n");
+    exit(0);
+  }
+  if(PPMBR[1]>QQMBR[3] || PPMBR[3]<QQMBR[1]){
+    printf("No Overlap between polygons\n");
+    exit(0);
+  }
+
   cmbr[0]=max(PPMBR[0], QQMBR[0]);
   cmbr[1]=max(PPMBR[1], QQMBR[1]);
   cmbr[2]=min(PPMBR[2], QQMBR[2]);
   cmbr[3]=min(PPMBR[3], QQMBR[3]);
+  if(DEBUG_INFO_PRINT){
+    cout<<"MBR_P ["<<PPMBR[0]<<", "<<PPMBR[1]<<", "<<PPMBR[2]<<", "<<PPMBR[3]<<endl;
+    cout<<"MBR_Q ["<<QQMBR[0]<<", "<<QQMBR[1]<<", "<<QQMBR[2]<<", "<<QQMBR[3]<<endl;
+    cout<<"CMBR ["<<cmbr[0]<<", "<<cmbr[1]<<", "<<cmbr[2]<<", "<<cmbr[3]<<endl;
+  }
 }
 
 // read polygons into vectors
-void readPolygons(int argc, char* argv[], double **polyPX, double **polyPY, double **polyQX, double **polyQY){
+void readPolygons(int argc, char* argv[], double **polyPX, double **polyPY, double **polyQX, double **polyQY, string inputShp1, int PPID, string inputShp2, int QQID){
   // check input parameters
   if (argc < 4) {
-    readInputFromShapeFiles(polyPX, polyPY, polyQX, polyQY);
+    readInputFromShapeFiles(polyPX, polyPY, polyQX, polyQY, inputShp1, PPID, inputShp2, QQID);
   }else{
     argn = 1;
     if (string(argv[1]) == "-union") {
@@ -214,14 +238,28 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
     i+=2;
     V=current->next;
   }
-  printf("Copying completed");
+   if(DEBUG_INFO_PRINT) printf("Copying completed");
   // -------------------------------------------------------------------------------------------
 }
 
 int main(int argc, char* argv[]){
   double *polyPX, *polyPY, *polyQX, *polyQY;
+  // [0, 36, 2742, 2741, 5978, | 2854, 2737]
+  int PPID=0; //ne_10m_ocean
+  string inputShp1=string("../datasets/ne_10m_ocean.csv");
+  loadPolygonFromShapeFile2(PPTmp, inputShp1, PPID+1);
 
-  readPolygons(argc, argv, &polyPX, &polyPY, &polyQX, &polyQY);
+  // [521, 1048, 1202, 1661, 1886, | 1524, 54, 1081, 1193]
+  string inputShp2=string("../datasets/continents.csv");
+  int QQID=1661; //continents
+  loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
+
+  // [4, 1, 0, 33, 30, 3, | 42, 25, 8, 19]
+  // string inputShp2=string("../datasets/ne_10m_land.csv");
+  // int QQID=4; //ne_10m_land
+  // loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
+
+  readPolygons(argc, argv, &polyPX, &polyPY, &polyQX, &polyQY, inputShp1, PPID, inputShp2, QQID);
   high_resolution_clock::time_point start, end;
 
   if(DEBUG_TIMING) start = high_resolution_clock::now();
