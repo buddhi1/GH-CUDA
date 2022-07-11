@@ -73,6 +73,11 @@ void getCMBR(double *cmbr){
   PPMBR=getMBR(PP[0]);
   QQMBR=getMBR(QQ[0]);
 
+  if(DEBUG_INFO_PRINT){
+    cout<<"MBR_P ["<<PPMBR[0]<<", "<<PPMBR[1]<<", "<<PPMBR[2]<<", "<<PPMBR[3]<<endl;
+    cout<<"MBR_Q ["<<QQMBR[0]<<", "<<QQMBR[1]<<", "<<QQMBR[2]<<", "<<QQMBR[3]<<endl;
+  }
+
   // check intersection between MBRs
   if(PPMBR[0]>QQMBR[2] || PPMBR[2]<QQMBR[0]){
     printf("No Overlap between polygons\n");
@@ -88,8 +93,6 @@ void getCMBR(double *cmbr){
   cmbr[2]=min(PPMBR[2], QQMBR[2]);
   cmbr[3]=min(PPMBR[3], QQMBR[3]);
   if(DEBUG_INFO_PRINT){
-    cout<<"MBR_P ["<<PPMBR[0]<<", "<<PPMBR[1]<<", "<<PPMBR[2]<<", "<<PPMBR[3]<<endl;
-    cout<<"MBR_Q ["<<QQMBR[0]<<", "<<QQMBR[1]<<", "<<QQMBR[2]<<", "<<QQMBR[3]<<endl;
     cout<<"CMBR ["<<cmbr[0]<<", "<<cmbr[1]<<", "<<cmbr[2]<<", "<<cmbr[3]<<endl;
   }
 }
@@ -250,14 +253,16 @@ int main(int argc, char* argv[]){
   loadPolygonFromShapeFile2(PPTmp, inputShp1, PPID+1);
 
   // [521, 1048, 1202, 1661, 1886, | 1524, 54, 1081, 1193]
-  string inputShp2=string("../datasets/continents.csv");
-  int QQID=1661; //continents
-  loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
-
-  // [4, 1, 0, 33, 30, 3, | 42, 25, 8, 19]
-  // string inputShp2=string("../datasets/ne_10m_land.csv");
-  // int QQID=4; //ne_10m_land
+  // string inputShp2=string("../datasets/continents.csv");
+  // int QQID=521; //continents
   // loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
+
+  // time these for paper
+  // ocean, land [2742, 30] [2742, 42]
+  // [4, 1, 0, 33, 30, 3, | 42, 25, 8, 19]
+  string inputShp2=string("../datasets/ne_10m_land.csv");
+  int QQID=4; //ne_10m_land
+  loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
 
   readPolygons(argc, argv, &polyPX, &polyPY, &polyQX, &polyQY, inputShp1, PPID, inputShp2, QQID);
   high_resolution_clock::time_point start, end;

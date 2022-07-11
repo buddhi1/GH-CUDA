@@ -33,7 +33,6 @@ usage:
 ./program data/Fig18-P.poly data/Fig18-Q.poly results/Fig18-R.poly
 ./program data/Fig19-P.poly data/Fig19-Q.poly results/Fig19-R.poly
 
-./program data/readPolygon/s.txt data/readPolygon/c.txt results/Fig-large-R.poly
 
 
 polyclip [-union] input1.poly input2.poly output.poly
@@ -53,6 +52,14 @@ polyclip [-union] input1.poly input2.poly output.poly
 
 ./polyclip Fig20-E.poly Fig20-M.poly Fig20-EM.poly
 ./polyclip Fig20-EM.poly Fig20-H.poly Fig20-R.poly
+
+
+----------------------------------------------------------------------------------------
+Test cases command line
+./program data/readPolygon/s.txt data/readPolygon/c.txt results/Fig-large-R.poly
+./program ../datasets/lakes_OSM_new_tiger/lakes_803987.txt  ../datasets/parks_OSM_new_tiger/parks_10613514.txt results/Fig-large-R.poly
+
+----------------------------------------------------------------------------------------
 
 
 ERROR
@@ -187,41 +194,6 @@ All time in microseconds
 Time: Total : 567794
 ____________________________________________________________________
 Shape file1: ../datasets/ne_10m_ocean.csv PPID: 0
-Shape file2: ../datasets/ne_10m_land.csv QQID: 0
-PP Polygon size 100612 QQ Polygon size 15956
-PP Count 100612 QQ Count 15956
-
-P overlap count with CMBR 15294 Q overlap count with CMBR 15215 
-
-Non-degen count P 0 *****--- Q 0
-Intersection count P 15209 *****--- Q 15209
-
-gpuCountIntersections kernel exe time(ms) 135.831619
-prefixsum kernels exe time(ms) 1.957792
-gpuNeighborMap kernel exe time(ms) 17.422976
-gpuCalculateIntersections kernel exe time(ms) 14.102528
-gpuSortPolyQ kernel exe time(ms) 0.008480
-gpuCalculateInitLabel kernel exe time(ms) 0.008032
-
-Copying completed
-Labelling intersections...
-
-... 0 delayed crossings and 1 delayed bouncings
-... 0 interior and 0 identical components added to result
-... 0 bouncing vertex pairs split
-
-Creating result...
-
-Post-processing...
-
-... 0 vertices removed
-
-R has 0 component with  vertices
-
-All time in microseconds
-Time: Total : 304966
-____________________________________________________________________
-Shape file1: ../datasets/ne_10m_ocean.csv PPID: 0
 Shape file2: ../datasets/ne_10m_land.csv QQID: 3
 PP Polygon size 100612 QQ Polygon size 9461
 PP Count 100612 QQ Count 9461
@@ -293,82 +265,6 @@ R has 1 component with 66447 vertices
 
 All time in microseconds
 Time: Total : 991193
-____________________________________________________________________
-Shape file1: ../datasets/ne_10m_ocean.csv PPID: 36 ***************************************
-Shape file2: ../datasets/ne_10m_land.csv QQID: 33
-PP Polygon size 66475 QQ Polygon size 15547
-PP Count 66475 QQ Count 15547
-MBR_P [-168.137, -53.886, -34.7936, 72.0021
-MBR_Q [-73.0572, 59.9879, 0, 83.6341
-CMBR [-73.0572, 59.9879, -34.7936, 72.0021
-
-P overlap count with CMBR 667 Q overlap count with CMBR 8107 
-
-Non-degen count P 0 *****--- Q 0
-Intersection count P 0 *****--- Q 0
-
-gpuCountIntersections kernel exe time(ms) 43.613762
-prefixsum kernels exe time(ms) 1.370016
-gpuNeighborMap kernel exe time(ms) 0.008480
-gpuCalculateIntersections kernel exe time(ms) 0.018176
-gpuSortPolyQ kernel exe time(ms) 0.006272
-gpuCalculateInitLabel kernel exe time(ms) 0.005824
-
-Copying completed
-Labelling intersections...
-
-... 0 delayed crossings and 0 delayed bouncings
-... 0 interior and 0 identical components added to result
-... 0 bouncing vertex pairs split
-
-Creating result...
-
-Post-processing...
-
-... 0 vertices removed
-
-R has 0 component with  vertices
-
-All time in microseconds
-Time: Total : 177075
-____________________________________________________________________
-Shape file1: ../datasets/ne_10m_ocean.csv PPID: 36
-Shape file2: ../datasets/ne_10m_land.csv QQID: 19
-PP Polygon size 66475 QQ Polygon size 3163
-PP Count 66475 QQ Count 3163
-MBR_P [-168.137, -53.886, -34.7936, 72.0021
-MBR_Q [-59.4058, 46.6184, 0, 51.6278
-CMBR [-59.4058, 46.6184, -34.7936, 51.6278
-
-P overlap count with CMBR 237 Q overlap count with CMBR 3163 
-
-Non-degen count P 0 *****--- Q 0
-Intersection count P 0 *****--- Q 0
-
-gpuCountIntersections kernel exe time(ms) 20.172064
-prefixsum kernels exe time(ms) 1.195392
-gpuNeighborMap kernel exe time(ms) 0.011296
-gpuCalculateIntersections kernel exe time(ms) 0.018112
-gpuSortPolyQ kernel exe time(ms) 0.004736
-gpuCalculateInitLabel kernel exe time(ms) 0.008960
-
-Copying completed
-Labelling intersections...
-
-... 0 delayed crossings and 0 delayed bouncings
-... 0 interior and 0 identical components added to result
-... 0 bouncing vertex pairs split
-
-Creating result...
-
-Post-processing...
-
-... 0 vertices removed
-
-R has 0 component with  vertices
-
-All time in microseconds
-Time: Total : 160656
 ____________________________________________________________________
 Shape file1: ../datasets/ne_10m_ocean.csv PPID: 2742
 Shape file2: ../datasets/ne_10m_land.csv QQID: 33

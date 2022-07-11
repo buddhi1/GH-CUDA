@@ -1,0 +1,135 @@
+851348
+684356
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 127953 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [139.55, 37.7338, 140.646, 39.1335
+No Overlap between polygons
+851348
+10613514
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 123848 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [139.941, 39.2758, 140.995, 40.5111
+No Overlap between polygons
+851348
+1106503
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 101164 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [135.855, 33.7244, 136.925, 35.2366
+No Overlap between polygons
+851348
+876440
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 100453 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [138.27, 36.9207, 138.85, 37.6169
+No Overlap between polygons
+851348
+1065174
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 91736 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [137.325, 35.1984, 138.357, 36.9196
+No Overlap between polygons
+851348
+1243058
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 91046 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [130.041, 33.395, 130.531, 33.5741
+No Overlap between polygons
+851348
+943452
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 87763 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [139.872, 38.873, 140.81, 39.67
+No Overlap between polygons
+851348
+844165
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 84530 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [138.583, 36.7365, 139.591, 37.7431
+No Overlap between polygons
+851348
+169840
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 81897 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [136.277, 35.3461, 137.653, 36.4651
+No Overlap between polygons
+851348
+321571
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 79686 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [132.283, 34.9035, 133.325, 35.4346
+No Overlap between polygons
+851348
+140315
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 79602 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [140.275, 37.8995, 141.056, 38.9646
+No Overlap between polygons
+851348
+173408
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 77367 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [130.585, 33.3566, 131.181, 33.8621
+No Overlap between polygons
+851348
+1789086
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 75543 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [140.561, 40.2177, 141.46, 41.4127
+No Overlap between polygons
+851348
+1312358
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 70179 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [139.327, 36.3157, 140.139, 37.1551
+No Overlap between polygons
+851348
+1502030
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 69283 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [142.023, 42.8838, 143.18, 44.9033
+No Overlap between polygons
+851348
+729699
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 63802 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [166.429, -46.2613, 167.594, -45.5524
+No Overlap between polygons
+851348
+34579
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 60397 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [135.689, 35.4379, 136.832, 36.1441
+No Overlap between polygons
+851348
+679995
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 56751 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [-76.0385, 35.5704, -75.7187, 35.974
+No Overlap between polygons
+851348
+34622
+Polygon PP with 206429 vertices reading completed!
+Polygon QQ with 54992 vertices reading completed!
+MBR_P [-93.1936, 50.1484, -91.6389, 50.7119
+MBR_Q [136.675, 37.0137, 137.349, 37.5334
+No Overlap between polygons
+851348
+1512242
