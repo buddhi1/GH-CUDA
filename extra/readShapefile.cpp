@@ -13,8 +13,8 @@
 
 using namespace std;
 
-#include "point2D.h"
-#include "polygon.h"
+#include "../lib/point2D.h"
+#include "../lib/polygon.h"
 #define FILE_COUNT 14
 
 vector<polygon> PPTmp, QQTmp;                 // two input polygons
@@ -344,6 +344,77 @@ void loadPolygonFromShapeFile2(vector<polygon>& PP, string s, int endOfFile) {
 	// printPolygonVector(PP);
 }
 
+// to read ocean, land and continents from OSM new data and save individual polygons to files
+void loadPolygonFromShapeFileNWrite2(vector<polygon>& PP, string s, int endOfFile, int saveOnlyId) {
+	string line;
+	ifstream from(s);
+
+	bool polygonReady=false;
+	bool polygonStart=false;
+	bool vertexFound=false;
+	string polygonString="";
+	string vertex="";
+	string vertex2="", vertexNew="";
+
+	point2D v;
+    polygon P;
+	int count=0;
+
+	do{
+		from >> line;
+
+		// check if there is comma to find vertices in the polygon
+		if (polygonStart && line.find("),")== std::string::npos) {
+			if (polygonStart && line.find(",")!= std::string::npos) {			
+				vertex2=line.substr(0, line.find(","));
+				vertex=vertexNew;
+				vertexNew=line.substr(line.find(",")+1)+" ";
+				vertexFound=true;
+			}
+		}
+
+		// adding end of the polygon 
+		if (polygonStart && line.find(")))")!= std::string::npos) {
+			vertex2= line.substr(0, line.find(")))"));
+			polygonReady=true;
+			polygonStart=false;
+			if(saveOnlyId==-1 || saveOnlyId==count) PP.push_back(P);
+			if(saveOnlyId==count) break;
+
+			count++;
+			P = polygon(); 
+			vertexFound=false;
+		} else if (polygonStart && line.find(")")!= std::string::npos) {
+			vertex2= line.substr(0, line.find(")"));
+			polygonReady=true;
+			polygonStart=false;
+			if(saveOnlyId==-1 || saveOnlyId==count) PP.push_back(P);
+			if(saveOnlyId==count) break;
+
+			count++;
+			P = polygon(); 
+			vertexFound=false;
+		}
+		// polygon start
+		if (line.find("(((")!= std::string::npos){
+			vertexNew= line.substr(line.find("(((")+3)+" ";
+			polygonStart=true;
+			polygonReady=false;
+		} else if (line.find("(")!= std::string::npos){
+			vertexNew= line.substr(line.find("(")+1)+" ";
+			polygonStart=true;
+			polygonReady=false;
+		}
+		
+		if(vertexFound){ 
+			v=point2D(atof(vertex.c_str()), atof(vertex2.c_str()));
+			P.newVertex(v, true);
+
+			vertexFound=false;
+		}
+	}while((PP.size() < endOfFile || endOfFile == -1) && (!from.eof() || endOfFile != -1));
+}
+
 // For Continents
 void loadPolygonFromShapeFile3(vector<polygon>& PP, string s, int endOfFile) {
 	string line;
@@ -542,11 +613,12 @@ int MySearchCallback(int id, void* arg){
 int main(){
 	
 	// open a file in write mode.
-	string fileName="parks";
+	// string fileName="parks";
 	// int polyId_list[FILE_COUNT]={4, 2,1, 0};
 	// int polyId_list[FILE_COUNT]={148346, 2418, 41116, 360489, 593561, 58746, 111678, 78019, 2422, 695318, 803987};
 	// int polyId_list[FILE_COUNT]={684356, 10613514, 1106503, 876440, 1065174, 1243058, 943452, 844165, 169840, 321571, 140315, 173408, 1789086, 1312358, 1502030, 729699, 34579, 679995, 34622, 1512242};
-	int polyId_list[FILE_COUNT]={943452, 844165, 169840, 321571, 140315, 173408, 1789086, 1312358, 1502030, 729699, 34579, 679995, 34622, 1512242};
+	// int polyId_list[FILE_COUNT]={943452, 844165, 169840, 321571, 140315, 173408, 1789086, 1312358, 1502030, 729699, 34579, 679995, 34622, 1512242};
+	int polyId_list[FILE_COUNT]={521, 1661, 1048, 1081, 1193};
 	string pid;
 	vector<polygon> local_poly;
 
@@ -557,20 +629,25 @@ int main(){
 		stream>>pid;
 
    		ofstream outfile;
-		outfile.open(fileName+"_"+pid+".txt");
+		outfile.open("continents"+pid+".txt");
+		// outfile.open(fileName+"_"+pid+".txt");
 
-		cout<<"Writing Start: "<<fileName<<pid<<" ..."<<endl;
+		// cout<<"Writing Start: "<<fileName<<pid<<" ..."<<endl;
+		cout<<"Writing Start: ..."<<endl;
 		// Linux path
 		// loadPolygonFromShapeFileNWrite4(local_poly, string("../../datasets/lakes_OSM_new_tiger/")+fileName, -1, polyId_list[fid]);
-		loadPolygonFromShapeFileNWrite4(local_poly, string("../../datasets/parks_OSM_new_tiger/")+fileName, -1, polyId_list[fid]);
+		// loadPolygonFromShapeFileNWrite4(local_poly, string("../../datasets/parks_OSM_new_tiger/")+fileName, -1, polyId_list[fid]);
 		// loadPolygonFromShapeFile4(PPTmp, string("../../datasets/parks_OSM_new_tiger/parks"), -1);
+		loadPolygonFromShapeFileNWrite2(local_poly, string("../../datasets/continents.csv"), -1, polyId_list[fid]);
+
 
 		// write to file
 		outfile<<local_poly[0].size<<endl;
 		for (vertex* V : local_poly[0].vertices(ALL)){
 			outfile<<setprecision(15)<<V->p.x<<","<<V->p.y<<endl;		
 		}
-		cout<<"Writing End: "<<fileName<<polyId_list[fid]<<endl;
+		// cout<<"Writing End: "<<fileName<<polyId_list[fid]<<endl;
+		cout<<"Writing End: "<<endl;
 		local_poly.clear();
 
 		outfile.close();

@@ -57,8 +57,22 @@ polyclip [-union] input1.poly input2.poly output.poly
 ----------------------------------------------------------------------------------------
 Test cases command line
 ./program data/readPolygon/s.txt data/readPolygon/c.txt results/Fig-large-R.poly
-./program ../datasets/lakes_OSM_new_tiger/lakes_803987.txt  ../datasets/parks_OSM_new_tiger/parks_10613514.txt results/Fig-large-R.poly
 
+./program data/syntheticO_n/lakes_851348.txt  data/syntheticO_n/lakes-synthetic_1_1.txt  results/Fig-large-R.poly
+./program data/readPolygon/s.txt  data/syntheticO_n/s-synthetic_15_10.txt  results/Fig-large-R.poly
+./program data/readPolygon/c.txt  data/syntheticO_n/c-synthetic_100_0.txt  results/Fig-large-R.poly
+
+./program data/syntheticO_n/lakes_851348.txt  data/syntheticO_n/lakes_851348.txt  results/Fig-large-R.poly
+./program data/readPolygon/s.txt  data/readPolygon/s.txt  results/Fig-large-R.poly
+./program data/readPolygon/c.txt  data/readPolygon/c.txt results/Fig-large-R.poly
+
+
+./program data/syntheticAlltoALL/worst-syntheticP_100.txt data/syntheticAlltoALL/worst-syntheticQ_100.txt results/Fig-syn.poly
+./program data/syntheticAlltoALL/worst-syntheticP_500.txt data/syntheticAlltoALL/worst-syntheticQ_500.txt results/Fig-syn.poly
+./program data/syntheticAlltoALL/worst-syntheticP_700.txt data/syntheticAlltoALL/worst-syntheticQ_700.txt results/Fig-syn.poly
+./program data/syntheticAlltoALL/worst-syntheticP_1000.txt data/syntheticAlltoALL/worst-syntheticQ_1000.txt results/Fig-syn.poly
+./program data/syntheticAlltoALL/worst-syntheticP_1500.txt data/syntheticAlltoALL/worst-syntheticQ_1500.txt results/Fig-syn.poly
+./program data/syntheticAlltoALL/worst-syntheticP_2000.txt data/syntheticAlltoALL/worst-syntheticQ_2000.txt results/Fig-syn.poly
 ----------------------------------------------------------------------------------------
 
 

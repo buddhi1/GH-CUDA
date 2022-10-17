@@ -419,6 +419,7 @@ void labelIntersections() {
   			// proceed to end of intersection chain and mark all visited vertices as NONE
   			do {
   				I->label = NONE;
+  				I->neighbour->label = NONE; //////////***********new
   				I = I->next;
   			} while (I->label == ON_ON);
   
@@ -442,22 +443,30 @@ void labelIntersections() {
         // mark both ends of an intersection chain with chainType (i.e., as DELAYED_*)
         X->label = chainType;
         I->label = chainType;
+        X->neighbour->label = chainType;  //*********new 
+        I->neighbour->label = chainType;  //*********new
         // cout << "lbl2 "<<I->p.x<<","<<I->p.y<<"-"<<chainType<<" "<<X->p.x<<","<<X->p.y<<"-"<<chainType<<endl;
   		}
     }
 
   if(DEBUG_INFO_PRINT) cout << "... " << count[0] << " delayed crossings and " << count[1] << " delayed bouncings" << endl;
 
-	//
+  // step 3 is commented and done in new steps in stesp 2 nested loop and GPU
+	//*********************************************************
 	// 3) copy labels from P to Q
 	//
+  // if(DEBUG_INFO_PRINT) cout <<"Label step 3 start"<<endl;
 
   // loop over intersection vertices of P
-  for (polygon& P : PP) 
-    for (vertex* I : P.vertices(INTERSECTION))
-      I->neighbour->label = I->label;
+  // for (polygon& P : PP) 
+  //   for (vertex* I : P.vertices(INTERSECTION)){
+  //     I->neighbour->label = I->label;
+  //   }
 
-  //
+  // if(DEBUG_INFO_PRINT) cout <<"Label step 3 completed"<<endl;
+  //*******************************************************************
+
+  // 
   // 3.5) check for special cases
   //
   

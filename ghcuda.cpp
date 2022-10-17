@@ -249,7 +249,8 @@ int main(int argc, char* argv[]){
   double *polyPX, *polyPY, *polyQX, *polyQY;
   // [0, 36, 2742, 2741, 5978, | 2854, 2737]
   int PPID=0; //ne_10m_ocean
-  string inputShp1=string("../datasets/ne_10m_ocean.csv");
+  // string inputShp1=string("../datasets/ne_10m_ocean.csv");
+  string inputShp1=string("../datasets/datasets/admin_states.txt");
   loadPolygonFromShapeFile2(PPTmp, inputShp1, PPID+1);
 
   // [521, 1048, 1202, 1661, 1886, | 1524, 54, 1081, 1193]
@@ -260,23 +261,30 @@ int main(int argc, char* argv[]){
   // time these for paper
   // ocean, land [2742, 30] [2742, 42]
   // [4, 1, 0, 33, 30, 3, | 42, 25, 8, 19]
-  string inputShp2=string("../datasets/ne_10m_land.csv");
+  // string inputShp2=string("../datasets/ne_10m_land.csv");
+  string inputShp2=string("../datasets/datasets/urban_areas.txt");
   int QQID=4; //ne_10m_land
   loadPolygonFromShapeFile2(QQTmp, inputShp2, QQID+1);
 
   readPolygons(argc, argv, &polyPX, &polyPY, &polyQX, &polyQY, inputShp1, PPID, inputShp2, QQID);
-  high_resolution_clock::time_point start, end;
+  high_resolution_clock::time_point start, end, start1, end1, start2, end2, start3, end3;
 
   if(DEBUG_TIMING) start = high_resolution_clock::now();
 
+  if(DEBUG_TIMING) start3 = high_resolution_clock::now();
   regularPolygonHandler(polyPX, polyPY, polyQX, polyQY);
+  if(DEBUG_TIMING) end3 = high_resolution_clock::now();// -------------------------------------------------------------------------------------------
 
   // PHASE: 3
+  if(DEBUG_TIMING) start1 = high_resolution_clock::now();
   labelIntersections();
+  if(DEBUG_TIMING) end1 = high_resolution_clock::now();// -------------------------------------------------------------------------------------------
 
   // PHASE: 4
+  if(DEBUG_TIMING) start2 = high_resolution_clock::now();
   createResult();
-  // -------------------------------------------------------------------------------------------
+  if(DEBUG_TIMING) end2 = high_resolution_clock::now();// -------------------------------------------------------------------------------------------
+  
   if(DEBUG_TIMING) end = high_resolution_clock::now();
   // post-processing
   cleanUpResult();
@@ -288,7 +296,12 @@ int main(int argc, char* argv[]){
   }
   if(DEBUG_TIMING){
     auto duration = duration_cast<microseconds>(end - start);
-    cout << "All time in microseconds\nTime: Total : " << fixed
-    << duration.count() << setprecision(10) << endl;
+    auto duration1 = duration_cast<microseconds>(end1 - start1);
+    auto duration2 = duration_cast<microseconds>(end2 - start2);
+    auto duration3 = duration_cast<microseconds>(end3 - start3);
+    cout<<"All time in microseconds\nTime: Total : " << fixed<< duration.count() << setprecision(10) << endl;
+    cout<<"Total intersection: " << fixed<< duration3.count() << setprecision(10) << endl;
+    cout<<"Sequential labeling: " << fixed<< duration1.count() << setprecision(10) << endl;
+    cout<<"Sequential labeling: " << fixed<< duration2.count() << setprecision(10) << endl;
   }
 }
