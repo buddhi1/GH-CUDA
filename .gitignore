@@ -1,8 +1,9 @@
-makefile
 program
 *.o
-~$notes.docx
-~$polygon_graphs.xlsx
 .vscode
-results
-data/
+data_files/
+extra_files/
+old_files/
+info.txt
+results/*.poly
+data/*
