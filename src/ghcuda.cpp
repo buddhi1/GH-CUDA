@@ -3,16 +3,16 @@
 #include <vector>
 #include <chrono>
 
-#include "lib/polyclip.cpp"
+#include "../lib/polyclip.cpp"
 #include "ghcuda.h"
 
 using namespace std::chrono;
 
-#include "lib/readShapefile.cpp"
+#include "../lib/readShapefile.cpp"
 
 
 int argn;
-string outputFile=string("results/Fig-def-R.poly");
+string outputFile=string("../results/Fig-def-R.poly");
 
 // read from shape files
 void readInputFromShapeFiles(double **polyPX, double **polyPY, double **polyQX, double **polyQY, string inputShp1, int PPID, string inputShp2, int QQID){

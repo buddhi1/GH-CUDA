@@ -12,24 +12,14 @@ all: gppolyclip_mDIV512.o ghcuda.o
 count: gppolyclip_mDIV512_withcount.o ghcuda.o 
 	$(GCC) -O2 $(LFLAGS) -o program ghcuda.o gppolyclip_mDIV512_withcount.o $(LIBB) $(LIBRA) $(LIBCUDA) -lcudart
 
-basic: gppolyclip.o ghcuda.o 
-	# $(GCC) -O2 $(LFLAGS) -o program ghcuda.o gppolyclip.o 
-	$(GCC) -O2 $(LFLAGS) -o program ghcuda.o gppolyclip.o $(LIBB) $(LIBRA) $(LIBCUDA) -lcudart
+ghcuda.o: src/ghcuda.cpp
+	$(GCC) $(DEBUG) $(CFLAGS) -c src/ghcuda.cpp
 
-ghcuda.o: ghcuda.cpp
-	$(GCC) $(DEBUG) $(CFLAGS) -c ghcuda.cpp
+gppolyclip_mDIV512.o: src/gppolyclip_mDIV512.cu
+	nvcc -Xptxas -O2 -o gppolyclip_mDIV512.o -c src/gppolyclip_mDIV512.cu
 
-
-gppolyclip.o: gppolyclip.cu
-	# nvcc -w -m64 -gencode arch=compute_70,code=sm_70 -o gppolyclip.o -c gppolyclip.cu
-	# nvcc -x cu -w -m64 -gencode arch=compute_70,code=sm_70 -o gppolyclip.o -c gppolyclip.cpp
-	# use -x cu option if CUDA file is a .cpp
-	nvcc -x cu -w -m64  -o gppolyclip.o -c gppolyclip.cu
-gppolyclip_mDIV512.o: gppolyclip_mDIV512.cu
-	nvcc -Xptxas -O2 -o gppolyclip_mDIV512.o -c gppolyclip_mDIV512.cu
-
-gppolyclip_mDIV512_withcount.o: gppolyclip_mDIV512_withcount.cu
-	nvcc -x cu -w -m64  -o gppolyclip_mDIV512_withcount.o -c gppolyclip_mDIV512_withcount.cu
+gppolyclip_mDIV512_withcount.o: src/gppolyclip_mDIV512_withcount.cu
+	nvcc -x cu -w -m64  -o gppolyclip_mDIV512_withcount.o -c src/gppolyclip_mDIV512_withcount.cu
 
 clean:
 	rm *.o program
