@@ -124,7 +124,7 @@ void readPolygons(int argc, char* argv[], double **polyPX, double **polyPY, doub
     gpc_read_polygon(qfile, polyQX, polyQY, &sizeQ, "QQ");
 
     if(argc > 4)
-      if(string(argv[argn+1]) == "1") PRINT_RESULTS=1;
+      if(string(argv[argn+1]) == "save") PRINT_RESULTS=1;
 
     // swap P and Q when |P|<|Q|
     // if(sizeP<sizeQ){

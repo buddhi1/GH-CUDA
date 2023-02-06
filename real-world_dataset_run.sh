@@ -27,7 +27,7 @@ do
     str="${str} $(($i+1)), ${base[$i]} ${overlay[$i]}, "
     
     if [ "$1" == "save" ]; then
-        str="${str} $(./program data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly 1)\n"
+        str="${str} $(./program data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly save)\n"
     else
         str="${str} $(./program data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
     fi
