@@ -13,6 +13,7 @@ using namespace std::chrono;
 
 int argn;
 string outputFile=string("../results/Fig-def-R.poly");
+int PRINT_RESULTS=0;
 
 // read from shape files
 void readInputFromShapeFiles(double **polyPX, double **polyPY, double **polyQX, double **polyQY, string inputShp1, int PPID, string inputShp2, int QQID){
@@ -121,6 +122,25 @@ void readPolygons(int argc, char* argv[], double **polyPX, double **polyPY, doub
     qfile=fopen(argv[argn++], "r");
     gpc_read_polygon(pfile, polyPX, polyPY, &sizeP, "PP");
     gpc_read_polygon(qfile, polyQX, polyQY, &sizeQ, "QQ");
+
+    if(argc > 4)
+      if(string(argv[argn+1]) == "1") PRINT_RESULTS=1;
+
+    // swap P and Q when |P|<|Q|
+    // if(sizeP<sizeQ){
+    //   double **tmp;
+    //   vector<polygon> tmpVertices;
+    //   tmp=polyPX;
+    //   polyPX=polyQX;
+    //   polyQX=tmp;
+    //   tmp=polyPY;
+    //   polyPY=polyQY;
+    //   polyQY=tmp;
+    //   tmpVertices=PP;
+    //   PP=QQ;
+    //   QQ=tmpVertices;
+    // }
+
     // */
 
     // -------------------------------------------------------------------------------------------
@@ -290,7 +310,7 @@ int main(int argc, char* argv[]){
   cleanUpResult();
 
   // write output polygon
-  if(DEBUG_INFO_PRINT) {
+  if(PRINT_RESULTS) {
     cout << "R ";
     savePolygon(RR, outputFile);
   }
@@ -299,9 +319,10 @@ int main(int argc, char* argv[]){
     auto duration1 = duration_cast<microseconds>(end1 - start1);
     auto duration2 = duration_cast<microseconds>(end2 - start2);
     auto duration3 = duration_cast<microseconds>(end3 - start3);
-    cout<<"All time in microseconds\nTime: Total : " << fixed<< duration.count() << setprecision(10) << endl;
-    cout<<"Total intersection: " << fixed<< duration3.count() << setprecision(10) << endl;
-    cout<<"Sequential labeling: " << fixed<< duration1.count() << setprecision(10) << endl;
-    cout<<"Sequential labeling: " << fixed<< duration2.count() << setprecision(10) << endl;
+    // cout<<"All times in microseconds\nTime: Total : " << fixed<< duration.count() << setprecision(10) << endl;
+    // cout<<"Total intersection: " << fixed<< duration3.count() << setprecision(10) << endl;
+    // cout<<"Sequential labeling: " << fixed<< duration1.count() << setprecision(10) << endl;
+    // cout<<"Trace Results: " << fixed<< duration2.count() << setprecision(10) << endl;
+    cout << fixed << duration3.count() << setprecision(10);
   }
 }

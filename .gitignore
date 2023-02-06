@@ -6,4 +6,5 @@ extra_files/
 old_files/
 info.txt
 results/*.poly
+results/*.csv
 data/*

@@ -1619,7 +1619,7 @@ void calculateIntersections(
     cudaEvent_t kernelStart0, kernelStart1, kernelStart2, kernelStart3, kernelStart4, kernelStart5, kernelStart6, kernelStart7, kernelStart8;
     cudaEvent_t kernelStop0, kernelStop1, kernelStop2, kernelStop3, kernelStop4, kernelStop5, kernelStop6, kernelStop7, kernelStop8;
     int *dev_lsmf_count, lsmf_count[sizeP], *dev_psf1_count, psf1_count[sizeP], *dev_psf2_count, psf2_count[sizeP];
-    int countCMBRP,countCMBRQ;
+    long countCMBRP,countCMBRQ;
 
     // printf("cmbr %f %f %f %f\n",*(cmbr+0), *(cmbr+1), *(cmbr+2), *(cmbr+3));
     
@@ -1685,16 +1685,18 @@ void calculateIntersections(
 
     cudaDeviceSynchronize();
   
-    if(DEBUG_INFO_PRINT){
+    // if(DEBUG_INFO_PRINT)
+    {
       cudaMemcpy(&boolPsPX, dev_boolPsPX, (sizeP+1)*sizeof(int), cudaMemcpyDeviceToHost);
       cudaMemcpy(&boolPsQX, dev_boolPsQX, (sizeQ+1)*sizeof(int), cudaMemcpyDeviceToHost);
       // count how many edges overlap with CMBRs
       countCMBRP=0;
       for(int x=0; x<sizeP; ++x) if(boolPsPX[x]) countCMBRP++;
-      printf("\nP overlap count with CMBR %d ",countCMBRP);
+      // printf("\nP overlap count with CMBR %d ",countCMBRP);
       countCMBRQ=0;
       for(int x=0; x<sizeQ; ++x) if(boolPsQX[x]) countCMBRQ++;
-      printf("Q overlap count with CMBR %d \n\n",countCMBRQ);
+      // printf("Q overlap count with CMBR %d \n\n",countCMBRQ);
+      printf("%ld, %ld, ", sizeP*sizeQ, countCMBRP*countCMBRQ);
     }
 /*
     if(DEBUG_TIMING){
@@ -1791,7 +1793,8 @@ void calculateIntersections(
           // dev_psQ1, dev_psQ2, dev_boolQX);
           dev_psQ1, dev_psQ2, dev_boolPsQX, dev_lsmf_count);
     
-    if(DEBUG_INFO_PRINT){
+    // if(DEBUG_INFO_PRINT)
+    {
       cudaDeviceSynchronize();
       cudaMemcpy(&lsmf_count, dev_lsmf_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
       long sum=0;
@@ -1799,8 +1802,9 @@ void calculateIntersections(
         sum+=lsmf_count[xx];
         // if (lsmf_count[xx]!=0) printf("%d %d\n", xx, lsmf_count[xx]);
       }
-      printf("Q lsmf count %d ", sum);
-      printf("Q Avg lsmf count %f\n",(double)sum/sizeQ);
+      // printf("Q lsmf count %d ", sum);
+      // printf("Q Avg lsmf count %f\n",(double)sum/sizeQ);
+      printf("%ld, ", sum);
     }
 
 
@@ -1819,9 +1823,12 @@ void calculateIntersections(
       for(int xx=0; xx<sizeP; ++xx){
         sum+=lsmf_count[xx];
       }
-      printf("P lsmf count %d ", sum);
+      printf("P lsmf count %ld ", sum);
       printf("P Avg lsmf count %f\n",(double)sum/sizeP);
     }
+
+    cudaFree(dev_boolPsPX);
+    cudaFree(dev_boolPsQX);
 
     if(DEBUG_TIMING) cudaEventRecord(kernelStop1);
 
@@ -1914,7 +1921,7 @@ void calculateIntersections(
             dev_neighborMapQ, dev_boolPsQX, dev_boolPsPX, dev_lsmf_count, dev_psf1_count, dev_psf2_count);
     if(DEBUG_TIMING) cudaEventRecord(kernelStop3);
   
-    long int sum2, sum1;
+    long sum2, sum1;
     if(DEBUG_INFO_PRINT){
       cudaMemcpy(&lsmf_count, dev_lsmf_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
       cudaMemcpy(&psf1_count, dev_psf1_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
@@ -1927,10 +1934,10 @@ void calculateIntersections(
         sum2+=(unsigned long)psf2_count[xx];
         // printf("%d %d\n",psf1_count[xx], psf2_count[xx]);
       }
-      sum2=81497*81497;
-      printf("\nQ psf1 count %d ", sum1);
-      printf("P psf2 count %d ", sum2);
-      printf("lsmf count %d \n", sum);
+      // sum2=81497*81497;
+      printf("\nQ psf1 count %ld ", sum1);
+      printf("P psf2 count %ld ", sum2);
+      printf("lsmf count %ld \n", sum);
       // printf("P Avg lsmf count %f\n",(double)sum/sizeP);
     }
 // -----------------------------------------------------------------------------------------------------
@@ -2011,7 +2018,8 @@ void calculateIntersections(
   cudaDeviceSynchronize();
 
 
-  if(DEBUG_INFO_PRINT){
+  // if(DEBUG_INFO_PRINT)
+  {
     cudaMemcpy(&lsmf_count, dev_lsmf_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(&psf1_count, dev_psf1_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(&psf2_count, dev_psf2_count, (sizeP)*sizeof(int), cudaMemcpyDeviceToHost);
@@ -2022,12 +2030,25 @@ void calculateIntersections(
       sum1+=psf1_count[xx];
       sum2+=psf2_count[xx];
     }
-    printf("\nP psf1 count %d ", sum1);
-    printf("Q psf2 count %d ", sum2);
-    printf("lsmf count %d \n", sum);
-    // printf("P Avg lsmf count %f\n",(double)sum/sizeP);
+    // printf("\nP psf1 count %ld ", sum1);
+    // printf("Q psf2 count %ld ", sum2);
+    // printf("lsmf count %ld \n", sum);
+    // // printf("P Avg lsmf count %f\n",(double)sum/sizeP);
+
+    printf("%ld, %ld, ", sum2, sum);
   }
 
+  cudaFree(dev_polyPX);
+  cudaFree(dev_polyPY);
+  cudaFree(dev_polyQX);
+  cudaFree(dev_polyQY);
+  cudaFree(dev_neighborMapQ);
+  cudaFree(dev_intersectionsP2);
+  cudaFree(dev_tmpBucketP);
+  cudaFree(dev_alphaSortedIndiciesP);
+  cudaFree(dev_neighborP2);
+  cudaFree(dev_psP1);
+  cudaFree(dev_psQ1);
 
   if(DEBUG_TIMING){
     cudaEventCreate(&kernelStart5);
@@ -2044,6 +2065,12 @@ void calculateIntersections(
   if(DEBUG_TIMING) cudaEventSynchronize(kernelStop5);
 
   cudaDeviceSynchronize();
+
+  cudaFree(dev_psQ2);
+  cudaFree(dev_intersectionsQ2);
+  cudaFree(dev_tmpBucketQ);
+  cudaFree(dev_alphaSortedIndiciesQ);
+  cudaFree(dev_neighborQ2);
 
   // Phase4: Inital label classificaiton
   // cudaMemcpy(*initLabelsQ, dev_initLabelsQ, *countNonDegenIntQ*sizeof(int), cudaMemcpyDeviceToHost);
@@ -2092,12 +2119,16 @@ void calculateIntersections(
     cudaEventElapsedTime(&kernelTiming4, kernelStart4, kernelStop4);
     cudaEventElapsedTime(&kernelTiming5, kernelStart5, kernelStop5);
     cudaEventElapsedTime(&kernelTiming6, kernelStart6, kernelStop6);
-    printf("\ngpuCountIntersections kernel exe time(ms) %f\n", kernelTiming1);
-    printf("prefixsum kernels exe time(ms) %f\n", kernelTiming2);
-    printf("gpuNeighborMap kernel exe time(ms) %f\n", kernelTiming3);
-    printf("gpuCalculateIntersections kernel exe time(ms) %f\n", kernelTiming4);
-    printf("gpuSortPolyQ kernel exe time(ms) %f\n", kernelTiming5);
-    printf("gpuCalculateInitLabel kernel exe time(ms) %f\n\n", kernelTiming6);
+    // printf("gpuCountIntersections kernel exe time(microsecond) %f\n", kernelTiming1*1000);
+    // printf("prefixsum kernels exe time(microsecond) %f\n", kernelTiming2*1000);
+    // printf("gpuNeighborMap kernel exe time(microsecond) %f\n", kernelTiming3*1000);
+    // printf("gpuCalculateIntersections kernel exe time(microsecond) %f\n", kernelTiming4*1000);
+    // printf("gpuSortPolyQ kernel exe time(microsecond) %f\n", kernelTiming5*1000);
+    // printf("gpuCalculateInitLabel kernel exe time(microsecond) %f\n\n", kernelTiming6*1000);
+
+    // printf("%f, %f, %f, %f, %f, %f, ", kernelTiming1*1000, 
+    //       kernelTiming2*1000, kernelTiming3*1000, kernelTiming4*1000, 
+    //       kernelTiming5*1000, kernelTiming6*1000);
   }
 
   // int limitP=*countNonDegenIntP;
@@ -2105,60 +2136,15 @@ void calculateIntersections(
   int limitP=10;
   int limitQ=10;
 
-  // printf("intersectionP");
-  // for (int i = 0; i < limitP*2; ++i){
-  //   if(i%2==0) 
-  //     printf("\n%d %d ", i/2, *(*alphaValuesP+(i/2)));
-  //   // printf(" %f ", intersectionsP[i]);
-  //   printf(" %f ", *(*intersectionsP+i));
-  // }
-  // printf("\n\nintersectionQ");
-  // for (int i = 0; i < limitQ*2; ++i){
-  //   if(i%2==0)
-  //     printf("\n%d %d ", i/2, *(*alphaValuesQ+(i/2)));
-  //   printf(" %f ", *(*intersectionsQ+i));
-  // }
-  // printf("\n\nalpha P\n");
-  // for (int i = 0; i < *countNonDegenIntP; ++i){
-  //   printf(" %d>%d ", i, alphaValuesP[i]);
-  // }
-  // printf("\n\nalpha Q\n");
-  // for (int i = 0; i < *countNonDegenIntQ; ++i){
-  //   printf(" %d>%d ", i, alphaValuesQ[i]);
-  // }
-  // printf("\n");
-  // printf("\nneighbor P\n");
-  // // for (int i = 0; i < limitP; ++i){
-  // for (int i = 679; i < 682; ++i){
-  //   printf(" %d-%d ", i, *(*neighborP+i));
-  // }
-  // printf("\nnneighbor Q\n");
-  // for (int i = 0; i < limitQ; ++i){
-  //   printf(" %d-%d ", i, *(*neighborQ+i));
-  // }
-  // printf("\n");
-  // for (int i = 0; i < *countNonDegenIntP; ++i)
-  // {
-  //   printf(" %d-%d ", i, *(*neighborMapP+i));
-  // }
-  // printf("\n");
-  // for (int i = 0; i < *countNonDegenIntQ; ++i)
-  // {
-  //   printf(" %d-%d ", i, *(*neighborMapQ+i));
-  // }
-  // printf("\nLabel P\n");
-  // for (int i = 0; i < limitP; ++i){
-  //   printf(" %d>%d ", i, *(*initLabelsP+i));
-  // }
-  // printf("\nLabel Q\n");
-  // for (int i = 0; i < limitQ; ++i){
-  //   printf(" %d>%d ", i, *(*initLabelsQ+i));
-  // }
-  // printf("\n");
-
-
-  cudaFree(dev_polyPX);
-  cudaFree(dev_polyPY);
-  cudaFree(dev_polyQX);
-  cudaFree(dev_polyQY);
+  cudaFree(dev_psP2);
+  cudaFree(dev_intersectionsP);
+  cudaFree(dev_intersectionsQ);
+  cudaFree(dev_alphaValuesP);
+  cudaFree(dev_alphaValuesQ);
+  cudaFree(dev_neighborP);
+  cudaFree(dev_neighborQ);
+  cudaFree(countNonDegenIntP);
+  cudaFree(countNonDegenIntQ);
+  cudaFree(dev_initLabelsP);
+  cudaFree(dev_initLabelsQ);
 }
