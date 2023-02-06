@@ -39,6 +39,9 @@
 ./polyclip ../../datasets/GH-Synthetic/syntheticAlltoALL/worst-syntheticP_1500.txt ../../datasets/GH-Synthetic/syntheticAlltoALL/worst-syntheticQ_1500.txt results/Fig-large-R.poly
 ./polyclip ../../datasets/GH-Synthetic/syntheticAlltoALL/worst-syntheticP_2000.txt ../../datasets/GH-Synthetic/syntheticAlltoALL/worst-syntheticQ_2000.txt results/Fig-large-R.poly
 */
+
+// ./polyclip ../examples2/Fig8-P.poly ../examples2/Fig8-Q.poly results/Fig8-R.poly
+
 ////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
@@ -74,6 +77,7 @@ bool DEBUG = true;   //flag to enable timing
 bool DEBUG2 = false;   //flag to enable timing
 // bool PF = true;       //flag to enable print information
 bool PF = false;       //flag to enable print information
+bool PR = false;       //flag to print results in a file
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -358,7 +362,7 @@ IntersectionType intersect(const edge& edgeP, const edge& edgeQ, double& alpha, 
 // compute all intersections
 //
 void computeIntersections2() {
-  cout << "Computing intersections...\n\n";
+  // cout << "Computing intersections...\n\n";
   
   point2D I;
   double alpha;
@@ -442,16 +446,18 @@ void computeIntersections2() {
             }
           }
         }
-  cout << "\n\n--------------------------------\n"; 
-  cout << "... " << count[1] << " non-degenerate and ";
-  cout << count[2]+count[3]+count[4]+count[5]+count[6]+count[7]+count[8] << " degenerate intersections found" << endl;
-  cout << "       (" << count[2]+count[3] << " T-intersections, ";
-  cout << count[4] << " V-intersections,\n        ";
-  cout << count[5] << " X-overlaps, ";
-  cout << count[6]+count[7] << " T-overlaps, ";
-  cout << count[8] << " V-overlaps)" << endl;
-  cout << "... " << count[1]+count[5]+count[3]+count[7] << " vertices added to P" << endl;
-  cout << "... " << count[1]+count[5]+count[2]+count[6] << " vertices added to Q" << endl;
+  if(PF){       
+    cout << "\n\n--------------------------------\n"; 
+    cout << "... " << count[1] << " non-degenerate and ";
+    cout << count[2]+count[3]+count[4]+count[5]+count[6]+count[7]+count[8] << " degenerate intersections found" << endl;
+    cout << "       (" << count[2]+count[3] << " T-intersections, ";
+    cout << count[4] << " V-intersections,\n        ";
+    cout << count[5] << " X-overlaps, ";
+    cout << count[6]+count[7] << " T-overlaps, ";
+    cout << count[8] << " V-overlaps)" << endl;
+    cout << "... " << count[1]+count[5]+count[3]+count[7] << " vertices added to P" << endl;
+    cout << "... " << count[1]+count[5]+count[2]+count[6] << " vertices added to Q" << endl;
+  }
 }
 //
 ////////////////////////////////////////////////////////////////////////
@@ -1273,6 +1279,9 @@ int main(int argc, char* argv[])
   qfile=fopen(argv[argn++], "r");
   gpc_read_polygon(pfile, "PP");
   gpc_read_polygon(qfile, "QQ");
+
+  if(argc > 4)
+    if(string(argv[argn+1]) == "save") PR=true;
   // -------------------------------------------------------
 
 
@@ -1338,11 +1347,12 @@ int main(int argc, char* argv[])
   cleanUpResult();
   
   // write output polygon
-  if(PF){
+  if(PR){
     // cout << "R "; 
     // savePolygon(RR,string(argv[argn]));
     cout << "R "; 
-    savePolygon(RR,string("results/ocean1.poly"));
+    savePolygon(RR,string(argv[argn]));
+    // savePolygon(RR,string("results/ocean1.poly"));
   }else{
     // savePolygon(RR,string(argv[argn]));
     // savePolygon(RR,string("results/ocean1.poly"));
@@ -1356,16 +1366,20 @@ int main(int argc, char* argv[])
     auto duration2 = duration_cast<microseconds>(end2 - start2);
     auto duration3 = duration_cast<microseconds>(end3 - start3);
 
-    cout << "All time in microseconds\nTime: Total : " << fixed
-    << duration.count() << setprecision(10) << endl;
-    cout << "Time: computeIntersections(): " << fixed
-    << duration1.count() << setprecision(10) << endl;
-    cout << "Time: labelIntersections(): " << fixed
-    << duration2.count() << setprecision(10) << endl;
-    cout << "Time: createResult(): " << fixed
-    << duration3.count() << setprecision(10) << endl;
-    cout << "\nintersection calc exec %: " << fixed << (duration1.count()*100.0/duration.count()) << setprecision(10) << endl;
-    cout << "labeling calc exec %: " << (duration2.count()*100.0/duration.count()) << endl;
-    cout << "result create calc exec %: " << (duration3.count()*100.0/duration.count()) << endl;
+    // cout << "All time in microseconds\nTime: Total : " << fixed
+    // << duration.count() << setprecision(10) << endl;
+    // cout << "Time: computeIntersections(): " << fixed
+    // << duration1.count() << setprecision(10) << endl;
+    // cout << "Time: labelIntersections(): " << fixed
+    // << duration2.count() << setprecision(10) << endl;
+    // cout << "Time: createResult(): " << fixed
+    // << duration3.count() << setprecision(10) << endl;
+    // cout << "\nintersection calc exec %: " << fixed << (duration1.count()*100.0/duration.count()) << setprecision(10) << endl;
+    // cout << "labeling calc exec %: " << (duration2.count()*100.0/duration.count()) << endl;
+    // cout << "result create calc exec %: " << (duration3.count()*100.0/duration.count()) << endl;
+
+    cout << setprecision(10) << duration1.count() << ", " <<
+     duration2.count() << ", " <<
+     duration3.count() << ", " << duration.count();
   }
 }

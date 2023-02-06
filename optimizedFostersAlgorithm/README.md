@@ -4,12 +4,6 @@ We use this optimized version as the baseline to compare speedup for the test ca
 
 [1] Foster, Erich L., Kai Hormann, and Romeo Traian Popa. "Clipping simple polygons with degenerate intersections." Computers & Graphics: X 2 (2019): 100007.
 
-///////////////////////////////////////////////////////////////////
-
-  POLYCLIP - README
-
-///////////////////////////////////////////////////////////////////
-
 
 1) Introduction
 ---------------

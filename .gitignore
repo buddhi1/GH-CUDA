@@ -8,3 +8,5 @@ info.txt
 results/*.poly
 results/*.csv
 data/*
+optimizedFostersAlgorithm/results/*
+polyclip

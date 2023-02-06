@@ -41,8 +41,17 @@ gppolyclip_mDIV512-LSMF.o: src/gppolyclip_mDIV512-LSMF.cu
 gppolyclip_mDIV512-noFilters.o: src/gppolyclip_mDIV512-noFilters.cu
 	nvcc -Xptxas -O2 -o gppolyclip_mDIV512-noFilters.o -c src/gppolyclip_mDIV512-noFilters.cu
 
+foster:
+	$(GCC) -O2 -std=c++11 optimizedFostersAlgorithm/polyclip_time.cpp -o polyclip
+
 clean:
 	rm *.o program
 
 cleanresults:
 	rm results/*.poly
+
+cleanfoster:
+	rm polyclip
+
+cleanfosterresults:
+	rm optimizedFostersAlgorithm/results/*.poly
