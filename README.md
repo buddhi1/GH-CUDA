@@ -92,8 +92,10 @@ Save data in table 3 case iv of the template Excel. Case i uses the data from se
 
 ## Evaluate Edge Pair Reduction by Filters
 We record the number of edge pairs after each filter which is employed in Intersection Count and Create M ap Q List kernels.
-* Clean build: $ make clean
-* Compile: $ make count
+```
+$ make clean
+$ make count
+```
 * real-world dataset experiments:
 ```
 $ /bin/bash real-world dataset run.sh
