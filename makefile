@@ -1,10 +1,17 @@
 GCC = g++
 
 LIBB = 
-LIBCUDA = -L/usr/local/cuda/lib64
 LIBRA = 
-CFLAGS = -m64 -O2 -Wall -c -std=c++11 -I/usr/local/include
 DEBUG =
+# LIBCUDA = -L/usr/local/cuda/lib64
+# CFLAGS = -m64 -O2 -Wall -c -std=c++11 -I/usr/local/include
+CFLAGS = -O2 -c -std=c++11 
+NVCCFLAG = -allow-unsupported-compiler
+
+# LIBCUDA = -L/usr/local/cuda/lib64
+LIBCUDA = -L$(firstword $(subst :, ,$(LD_LIBRARY_PATH)))
+
+all: filters
 
 filters: gppolyclip_mDIV512.o ghcuda.o 
 	$(GCC) -O2 $(LFLAGS) -o program ghcuda.o gppolyclip_mDIV512.o $(LIBB) $(LIBRA) $(LIBCUDA) -lcudart
@@ -27,16 +34,16 @@ ghcuda.o: src/ghcuda.cpp
 	$(GCC) $(DEBUG) $(CFLAGS) -c src/ghcuda.cpp
 
 gppolyclip_mDIV512.o: src/gppolyclip_mDIV512.cu
-	nvcc -Xptxas -O2 -o gppolyclip_mDIV512.o -c src/gppolyclip_mDIV512.cu
+	nvcc $(NVCCFLAG) -Xptxas -O2 -o gppolyclip_mDIV512.o -c src/gppolyclip_mDIV512.cu
 
 gppolyclip_mDIV512_withcount.o: src/gppolyclip_mDIV512_withcount.cu
-	nvcc -x cu -w -m64  -o gppolyclip_mDIV512_withcount.o -c src/gppolyclip_mDIV512_withcount.cu
+	nvcc $(NVCCFLAG)  -Xptxas -O2  -o gppolyclip_mDIV512_withcount.o -c src/gppolyclip_mDIV512_withcount.cu
 
 gppolyclip_mDIV512-CMF_CF.o: src/gppolyclip_mDIV512-CMF_CF.cu
-	nvcc -Xptxas -O2 -o gppolyclip_mDIV512-CMF_CF.o -c src/gppolyclip_mDIV512-CMF_CF.cu
+	nvcc $(NVCCFLAG) -Xptxas -O2 -o gppolyclip_mDIV512-CMF_CF.o -c src/gppolyclip_mDIV512-CMF_CF.cu
 
 gppolyclip_mDIV512-LSMF.o: src/gppolyclip_mDIV512-LSMF.cu
-	nvcc -Xptxas -O2 -o gppolyclip_mDIV512-LSMF.o -c src/gppolyclip_mDIV512-LSMF.cu
+	nvcc $(NVCCFLAG) -Xptxas -O2 -o gppolyclip_mDIV512-LSMF.o -c src/gppolyclip_mDIV512-LSMF.cu
 
 gppolyclip_mDIV512-noFilters.o: src/gppolyclip_mDIV512-noFilters.cu
 	nvcc -Xptxas -O2 -o gppolyclip_mDIV512-noFilters.o -c src/gppolyclip_mDIV512-noFilters.cu
