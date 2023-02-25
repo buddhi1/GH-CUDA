@@ -2,6 +2,8 @@
 
 This repository contains source code of our latest work, which is accepted for CCGRID 2023. 
 
+[![DOI](https://zenodo.org/badge/480433755.svg)](https://zenodo.org/badge/latestdoi/480433755)
+
 ## Installation
 
 ```
