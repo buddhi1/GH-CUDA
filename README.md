@@ -2,12 +2,21 @@
 
 This repository contains source code of our latest work, which is accepted for CCGRID 2023. 
 
+[![DOI](https://zenodo.org/badge/480433755.svg)](https://zenodo.org/badge/latestdoi/480433755)
+
 ## Installation
 
 ```
 $ git clone https://github.com/buddhi1/GHCUDA.git
 $ cd GH-CUDA
 $ make
+```
+
+Use the following commands to unzip data.
+```
+$ cd data/
+$ unzip poly data.zip
+$ cd ..
 ```
 
 
