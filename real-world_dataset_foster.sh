@@ -27,9 +27,9 @@ do
     str="${str} $(($i+1)), ${base[$i]} ${overlay[$i]}, "
     
     if [ "$1" == "save" ]; then
-        str="${str} $(./polyclip data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly save)\n"
+        str="${str} $(./polyclip data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt optimizedFostersAlgorithm/results/results_${base[$i]}_${overlay[$i]}.poly save)\n"
     else
-        str="${str} $(./polyclip data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
+        str="${str} $(./polyclip data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt optimizedFostersAlgorithm/results/results_${base[$i]}_${overlay[$i]}.poly)\n"
     fi
     # str="${str} $(./program data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
     # ./polyclip data/realworld/${base[$i]}.txt  data/realworld/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly

@@ -24,7 +24,13 @@ do
         continue
     fi
     str="${str} $(($i+1)), ${base[$i]} ${overlay[$i]}, "
-    str="${str} $(./program data/synthetic/${base[$i]}.txt  data/synthetic/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
+    if [ "$1" == "save" ]; then
+        str="${str} $(./program data/synthetic/${base[$i]}.txt  data/synthetic/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly save)\n"
+    else
+        str="${str} $(./program data/synthetic/${base[$i]}.txt  data/synthetic/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
+    fi
+
+    # str="${str} $(./program data/synthetic/${base[$i]}.txt  data/synthetic/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly)\n"
     # ./program data/synthetic/${base[$i]}.txt  data/synthetic/${overlay[$i]}.txt results/results_${base[$i]}_${overlay[$i]}.poly
 done
 echo -e "$str" > results/synthetic_tests.csv
