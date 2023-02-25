@@ -9,7 +9,9 @@ CFLAGS = -O2 -c -std=c++11
 NVCCFLAG = -allow-unsupported-compiler
 
 # LIBCUDA = -L/usr/local/cuda/lib64
-LIBCUDA = -L$(firstword $(subst :, ,$(LD_LIBRARY_PATH)))
+# LIBCUDA = -L/usr/local/cuda-12.0/lib64
+# LIBCUDA = -L$(firstword $(subst :, ,$(LD_LIBRARY_PATH)))
+LIBCUDA = -L$(firstword $(filter /usr/local/cuda-%/lib64,  $(subst :, ,$(LD_LIBRARY_PATH))))
 
 all: filters
 
