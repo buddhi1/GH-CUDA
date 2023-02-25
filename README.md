@@ -10,6 +10,13 @@ $ cd GH-CUDA
 $ make
 ```
 
+Use the following commands to unzip data.
+```
+$ cd data/
+$ unzip poly data.zip
+$ cd ..
+```
+
 
 Usage: Use save flag only when the resulting polygon needs to be saved to a file.
 ```
