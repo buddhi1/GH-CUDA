@@ -63,6 +63,8 @@ thetic_sequential.csv* spreadsheets in **results/** folder with runtime breakdow
 
 Copy real-world parallel execution data in *real-world_tests.csv* and real-world sequential data in *real-world_sequential.csv* to Table 1 in **Real-world_dataset** workbook of the template Excel file. Copy synthetic parallel execution data in *synthetic_tests.csv* and synthetic sequential data in *synthetic-sequential.csv* to the Table in **Synthetic_dataset** workbook of the template Excel file. The template Excel file is **graphs.xlsx** in the **results/** folder.
 
+**Save results:** Use *save* flag at the end of the script calls above to save clipped polygon coordinates in files. Foster’s results are saved in *optimizedFostersAlgorithm/results/* folder and GPU results are saved in *results/* folder. Saved results can be used to compare outputs and we do not recommend using *save* flag for performance evaluation.
+
 ## Evaluate Filter Performance
 
 Three experiments need to be completed to compare different filter configurations.
