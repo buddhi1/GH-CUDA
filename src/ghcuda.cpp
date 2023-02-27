@@ -272,7 +272,6 @@ void regularPolygonHandler(double *polyPX, double *polyPY, double *polyQX, doubl
 }
 
 int main(int argc, char* argv[]){
-  printf("Starting...\n");
   int PPID, QQID;
   string inputShp1, inputShp2;
   double *polyPX, *polyPY, *polyQX, *polyQY;
