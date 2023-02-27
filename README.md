@@ -12,15 +12,46 @@ $ cd GH-CUDA
 $ make
 ```
 
+*make* file reads the cuda path from *$LD_LIBRARY_PATH* variable. If the path is not correctly found, replace *LIBCUDA* variable in the *make* file with the correct path. 
 Use the following commands to unzip data.
 ```
 $ cd data/
 $ unzip poly data.zip
 $ cd ..
 ```
+Now data folder should have realworld and synthetic folders with data files in them.
 
+**Debug mode:** Following steps can be used to quickly check if everything is set up correctly. case is the test case id of real-world or synthetic dataset. Results are saved in the *results/ folder*.
 
-Usage: Use save flag only when the resulting polygon needs to be saved to a file.
+* Compile GPU code:
+```
+$ make clean
+$ make
+```
+
+* Real-world dataset experiments: (Fastest case=8)
+``
+$ /bin/bash real-world dataset run.sh ⟨case⟩
+``
+* Synthetic dataset experiments: (Fastest case=4)
+``
+$ /bin/bash synthetic dataset run.sh ⟨case⟩
+``
+* Compile sequential code:
+```
+$ make cleanfoster
+$ make foster
+```
+* Real-world dataset experiments: (Fastest case=8)
+```
+$/bin/bash real-world dataset foster.sh ⟨case⟩
+```
+* Synthetic dataset experiments: (Fastest case=4)
+```
+$ /bin/bash synthetic dataset foster.sh ⟨case⟩
+```
+
+**Usage:** Use save flag only when the resulting polygon needs to be saved to a file.
 ```
 $ ./program ⟨base polygon file⟩ ⟨overlay polygon file⟩ ⟨result polygon path⟩ save
 ```
@@ -49,11 +80,11 @@ $ /bin/bash synthetic dataset run.sh
 $ make cleanfoster
 $ make foster
 ```
-7. Real-world dataset experiments:
+* Real-world dataset experiments:
 ```
 $ /bin/bash real-world dataset foster.sh
 ```
-8. Synthetic dataset experiments:
+* Synthetic dataset experiments:
 ```
 $ /bin/bash synthetic dataset foster.sh
 ```
