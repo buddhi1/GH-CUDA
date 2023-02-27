@@ -1175,7 +1175,8 @@ void calculateIntersections(
                   int *countNonDegenIntP, int *countNonDegenIntQ, 
                   double **intersectionsP, double **intersectionsQ, int **alphaValuesP, int **alphaValuesQ,
                   int **initLabelsP, int **initLabelsQ,
-                  int **neighborP, int **neighborQ){
+                  int **neighborP, int **neighborQ,
+                  int DEBUG_INFO_PRINT){
     double *dev_polyPX, *dev_polyPY, *dev_polyQX, *dev_polyQY;
     int *dev_psP1, *dev_psP2, *dev_psQ1, *dev_psQ2, *dev_boolPsPX, *dev_boolPsQX, *dev_boolPX, *dev_boolQX;
     int psP1[sizeP+1], psP2[sizeP+1], psQ1[sizeQ+1], psQ2[sizeQ+1];
@@ -1493,7 +1494,7 @@ void calculateIntersections(
   cudaDeviceSynchronize();
 
   float kernelTiming0=0, kernelTiming1=0, kernelTiming12=0, kernelTiming2=0, kernelTiming3=0, kernelTiming4=0, kernelTiming5=0, kernelTiming6=0;
-  if(DEBUG_TIMING){
+  if(DEBUG_INFO_PRINT && DEBUG_TIMING){
     cudaEventElapsedTime(&kernelTiming0, kernelStart0, kernelStop0);
     cudaEventElapsedTime(&kernelTiming1, kernelStart1, kernelStop1);
     cudaEventElapsedTime(&kernelTiming12, kernelStart12, kernelStop12);
@@ -1502,16 +1503,28 @@ void calculateIntersections(
     cudaEventElapsedTime(&kernelTiming4, kernelStart4, kernelStop4);
     cudaEventElapsedTime(&kernelTiming5, kernelStart5, kernelStop5);
     cudaEventElapsedTime(&kernelTiming6, kernelStart6, kernelStop6);
-    // printf("gpuCMBR kernel exe time(microsecond) %f\n", kernelTiming0*1000);
-    // printf("gpuCountIntersections kernel exe time(microsecond) %f\n", kernelTiming1*1000);
-    // printf("gpuCountIntersections2 kernel exe time(microsecond) %f\n", kernelTiming12*1000);
-    // printf("prefixsum kernels exe time(microsecond) %f\n", kernelTiming2*1000);
-    // printf("gpuNeighborMap kernel exe time(microsecond) %f\n", kernelTiming3*1000);
-    // printf("gpuCalculateIntersections kernel exe time(microsecond) %f\n", kernelTiming4*1000);
-    // printf("gpuSortPolyQ kernel exe time(microsecond) %f\n", kernelTiming5*1000);
-    // printf("gpuCalculateInitLabel kernel exe time(microsecond) %f\n\n", kernelTiming6*1000);
     
-    printf("%f, %f, %f, %f, %f, %f, ", (kernelTiming1*1000 + kernelTiming12*1000), 
+    printf("gpuCMBR kernel exe time(microsecond) %f\n", kernelTiming0*1000);
+    printf("gpuCountIntersections kernel exe time(microsecond) %f\n", kernelTiming1*1000);
+    printf("gpuCountIntersections2 kernel exe time(microsecond) %f\n", kernelTiming12*1000);
+    printf("prefixsum kernels exe time(microsecond) %f\n", kernelTiming2*1000);
+    printf("gpuNeighborMap kernel exe time(microsecond) %f\n", kernelTiming3*1000);
+    printf("gpuCalculateIntersections kernel exe time(microsecond) %f\n", kernelTiming4*1000);
+    printf("gpuSortPolyQ kernel exe time(microsecond) %f\n", kernelTiming5*1000);
+    printf("gpuCalculateInitLabel kernel exe time(microsecond) %f\n\n", kernelTiming6*1000);
+    
+   
+  }else{
+    cudaEventElapsedTime(&kernelTiming0, kernelStart0, kernelStop0);
+    cudaEventElapsedTime(&kernelTiming1, kernelStart1, kernelStop1);
+    cudaEventElapsedTime(&kernelTiming12, kernelStart12, kernelStop12);
+    cudaEventElapsedTime(&kernelTiming2, kernelStart2, kernelStop2);
+    cudaEventElapsedTime(&kernelTiming3, kernelStart3, kernelStop3);
+    cudaEventElapsedTime(&kernelTiming4, kernelStart4, kernelStop4);
+    cudaEventElapsedTime(&kernelTiming5, kernelStart5, kernelStop5);
+    cudaEventElapsedTime(&kernelTiming6, kernelStart6, kernelStop6);
+
+     printf("%f, %f, %f, %f, %f, %f, ", (kernelTiming1*1000 + kernelTiming12*1000), 
           kernelTiming2*1000, kernelTiming3*1000, kernelTiming4*1000, 
           kernelTiming5*1000, kernelTiming6*1000);
   }

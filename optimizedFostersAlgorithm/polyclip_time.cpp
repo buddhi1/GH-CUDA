@@ -75,7 +75,6 @@ bool UNION = false;                     // global switch for computing union ins
 
 bool DEBUG = true;   //flag to enable timing
 bool DEBUG2 = false;   //flag to enable timing
-// bool PF = true;       //flag to enable print information
 bool PF = false;       //flag to enable print information
 bool PR = false;       //flag to print results in a file
 
@@ -1280,8 +1279,18 @@ int main(int argc, char* argv[])
   gpc_read_polygon(pfile, "PP");
   gpc_read_polygon(qfile, "QQ");
 
-  if(argc > 4)
+  if(argc > 4){
     if(string(argv[argn+1]) == "save") PR=true;
+    if(string(argv[argn+1]) == "debug") {
+      PF=true;
+      DEBUG2=true;
+    }
+  }
+  if(argc > 5)
+    if(string(argv[argn+2]) == "debug") {
+      PF=true;
+      DEBUG2=true;
+    }
   // -------------------------------------------------------
 
 
@@ -1359,24 +1368,31 @@ int main(int argc, char* argv[])
   }
 
 
-  if(DEBUG){
+  if(DEBUG && PF){
     // Calculating total time taken by the program.
     auto duration = duration_cast<microseconds>(end - start);
     auto duration1 = duration_cast<microseconds>(end1 - start1);
     auto duration2 = duration_cast<microseconds>(end2 - start2);
     auto duration3 = duration_cast<microseconds>(end3 - start3);
 
-    // cout << "All time in microseconds\nTime: Total : " << fixed
-    // << duration.count() << setprecision(10) << endl;
-    // cout << "Time: computeIntersections(): " << fixed
-    // << duration1.count() << setprecision(10) << endl;
-    // cout << "Time: labelIntersections(): " << fixed
-    // << duration2.count() << setprecision(10) << endl;
-    // cout << "Time: createResult(): " << fixed
-    // << duration3.count() << setprecision(10) << endl;
-    // cout << "\nintersection calc exec %: " << fixed << (duration1.count()*100.0/duration.count()) << setprecision(10) << endl;
-    // cout << "labeling calc exec %: " << (duration2.count()*100.0/duration.count()) << endl;
-    // cout << "result create calc exec %: " << (duration3.count()*100.0/duration.count()) << endl;
+    cout << "All time in microseconds\nTime: Total : " << fixed
+    << duration.count() << setprecision(10) << endl;
+    cout << "Time: computeIntersections(): " << fixed
+    << duration1.count() << setprecision(10) << endl;
+    cout << "Time: labelIntersections(): " << fixed
+    << duration2.count() << setprecision(10) << endl;
+    cout << "Time: createResult(): " << fixed
+    << duration3.count() << setprecision(10) << endl;
+    cout << "\nintersection calc exec %: " << fixed << (duration1.count()*100.0/duration.count()) << setprecision(10) << endl;
+    cout << "labeling calc exec %: " << (duration2.count()*100.0/duration.count()) << endl;
+    cout << "result create calc exec %: " << (duration3.count()*100.0/duration.count()) << endl;    
+  }
+  else{
+    // Calculating total time taken by the program.
+    auto duration = duration_cast<microseconds>(end - start);
+    auto duration1 = duration_cast<microseconds>(end1 - start1);
+    auto duration2 = duration_cast<microseconds>(end2 - start2);
+    auto duration3 = duration_cast<microseconds>(end3 - start3);
 
     cout << setprecision(10) << duration1.count() << ", " <<
      duration2.count() << ", " <<

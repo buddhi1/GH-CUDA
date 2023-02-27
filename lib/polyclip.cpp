@@ -39,6 +39,9 @@ vertex **PPVertexPointers, **QQVertexPointers;                // two input polyg
 vector<polygon> RR;                     // output polygon
 
 bool UNION = false;                     // global switch for computing union instead of intersection
+int PRINT_RESULTS=0;
+int DEBUG_MODE=0;
+int DEBUG_INFO_PRINT=0;
 
 ////////////////////////////////////////////////////////////////////////
 //
