@@ -30,13 +30,13 @@ $ make
 ```
 
 * Real-world dataset experiments: (Fastest case=8)
-``
+```
 $ /bin/bash real-world dataset run.sh ⟨case⟩
-``
+```
 * Synthetic dataset experiments: (Fastest case=4)
-``
+```
 $ /bin/bash synthetic dataset run.sh ⟨case⟩
-``
+```
 * Compile sequential code:
 ```
 $ make cleanfoster
