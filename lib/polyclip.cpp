@@ -40,8 +40,8 @@ vector<polygon> RR;                     // output polygon
 
 bool UNION = false;                     // global switch for computing union instead of intersection
 int PRINT_RESULTS=0;
-int DEBUG_MODE=0;
-int DEBUG_INFO_PRINT=0;
+int DEBUG_MODE=1;
+int DEBUG_INFO_PRINT=1;
 
 ////////////////////////////////////////////////////////////////////////
 //

@@ -5,7 +5,7 @@ LIBRA =
 DEBUG =
 # LIBCUDA = -L/usr/local/cuda/lib64
 # CFLAGS = -m64 -O2 -Wall -c -std=c++11 -I/usr/local/include
-CFLAGS = -O2 -c -std=c++11 
+CFLAGS = -m64 -O2 -c -std=c++11 -I/usr/local/include
 NVCCFLAG = -allow-unsupported-compiler
 
 # LIBCUDA = -L/usr/local/cuda/lib64
