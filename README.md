@@ -16,7 +16,7 @@ $ make
 Use the following commands to unzip data.
 ```
 $ cd data/
-$ unzip poly data.zip
+$ unzip poly_data.zip
 $ cd ..
 ```
 Now data folder should have realworld and synthetic folders with data files in them.
@@ -31,11 +31,11 @@ $ make
 
 * Real-world dataset experiments: (Fastest case=8)
 ```
-$ /bin/bash real-world dataset run.sh ⟨case⟩
+$ /bin/bash real-world_dataset_run.sh ⟨case⟩
 ```
 * Synthetic dataset experiments: (Fastest case=4)
 ```
-$ /bin/bash synthetic dataset run.sh ⟨case⟩
+$ /bin/bash synthetic_dataset_run.sh ⟨case⟩
 ```
 * Compile sequential code:
 ```
@@ -44,11 +44,11 @@ $ make foster
 ```
 * Real-world dataset experiments: (Fastest case=8)
 ```
-$/bin/bash real-world dataset foster.sh ⟨case⟩
+$/bin/bash real-world_dataset_foster.sh ⟨case⟩
 ```
 * Synthetic dataset experiments: (Fastest case=4)
 ```
-$ /bin/bash synthetic dataset foster.sh ⟨case⟩
+$ /bin/bash synthetic_dataset_foster.sh ⟨case⟩
 ```
 
 **Usage:** Use save flag only when the resulting polygon needs to be saved to a file.
@@ -67,11 +67,11 @@ $ make
 ```
 * Real-world dataset experiments:
 ```
-/bin/bash real-world dataset run.sh
+/bin/bash real-world_dataset_run.sh
 ```
 * Synthetic dataset experiments:
 ```
-$ /bin/bash synthetic dataset run.sh
+$ /bin/bash synthetic_dataset_run.sh
 ```
 
 
@@ -82,11 +82,11 @@ $ make foster
 ```
 * Real-world dataset experiments:
 ```
-$ /bin/bash real-world dataset foster.sh
+$ /bin/bash real-world_dataset_foster.sh
 ```
 * Synthetic dataset experiments:
 ```
-$ /bin/bash synthetic dataset foster.sh
+$ /bin/bash synthetic_dataset_foster.sh
 ```
 
 These executions generate *real-world_tests.csv*, *synthetic_tests.csv*, *real-world_sequential.csv*, and *syn-
@@ -106,7 +106,7 @@ $ make cmfcf
 ```
 * Real-world dataset experiments:
 ```
-$ /bin/bash real-world dataset run.sh
+$ /bin/bash real-world_dataset_run.sh
 ```
 These executions generate *real-world_tests.csv*, and *synthetic_tests.csv* spreadsheets in **results/** folder. Save data in table 3 case ii of the template Excel.
 
@@ -117,7 +117,7 @@ $ make lsmf
 ```
 * Real-world dataset experiments:
 ```
-$ /bin/bash real-world dataset run.sh
+$ /bin/bash real-world_dataset_run.sh
 ```
 Save data in table 3 case iii of the template Excel.
 
@@ -128,7 +128,7 @@ $ make nofilters
 ```
 * Rreal-world dataset experiments:
 ```
-$ /bin/bash real-world dataset run.sh
+$ /bin/bash real-world_dataset_run.sh
 ```
 Save data in table 3 case iv of the template Excel. Case i uses the data from section A where all filters are employed. Use that data in Table 3 case i. Table 4 and the reduction percentage graphs are auto-generated using Table 3 data.
 
@@ -140,7 +140,7 @@ $ make count
 ```
 * real-world dataset experiments:
 ```
-$ /bin/bash real-world dataset run.sh
+$ /bin/bash real-world_dataset_run.sh
 ```
 This execution generates *real-world_tests_counts.csv* spreadsheet in **results/** folder with the edge pair counts after each filter for the above-mentioned kernels. Table 2 in the template excel represents this data
 
