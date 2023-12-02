@@ -145,7 +145,7 @@ $ /bin/bash real-world_dataset_run.sh
 This execution generates *real-world_tests_counts.csv* spreadsheet in **results/** folder with the edge pair counts after each filter for the above-mentioned kernels. Table 2 in the template excel represents this data
 
 ## Reference
-Reference to cite when you use our work:
+Use following to cite our work:
 ```
 @inproceedings{ashan2023efficient,
   title={Efficient PRAM and Practical GPU Algorithms for Large Polygon Clipping with Degenerate Cases},
