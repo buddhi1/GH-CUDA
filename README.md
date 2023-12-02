@@ -147,7 +147,12 @@ This execution generates *real-world_tests_counts.csv* spreadsheet in **results/
 ## Reference
 Reference to cite when you use our work:
 ```
-@article{
-  comming soon
+@inproceedings{ashan2023efficient,
+  title={Efficient PRAM and Practical GPU Algorithms for Large Polygon Clipping with Degenerate Cases},
+  author={Ashan, MK Buddhi and Puri, Satish and Prasad, Sushil K},
+  booktitle={2023 IEEE/ACM 23rd International Symposium on Cluster, Cloud and Internet Computing (CCGrid)},
+  pages={579--591},
+  year={2023},
+  organization={IEEE}
 }
 ```
